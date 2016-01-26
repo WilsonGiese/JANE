@@ -10,7 +10,7 @@ use std::io::Result;
 fn main() {
 	let mut cpu = CPU::default();
 	cpu.power_up();
-	println!("{:#?}", cpu);
+	println!("{}", cpu);
 
     let buffer = read_rom("roms/smb.nes").unwrap();
 	// Roms begin with first 3 bytes = "NES"

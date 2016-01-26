@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Model for the 6502 Microprocessor
 /// The CPU consists of six registers:
 ///		A  - Accumulator register used by the ALU
@@ -33,5 +35,18 @@ impl CPU {
 	///		http://wiki.nesdev.com/w/index.php/CPU_power_up_state#After_reset
 	pub fn reset(&mut self) {
 		// TODO: Reset state
+	}
+}
+
+impl fmt::Display for CPU {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "CPU {{");
+		write!(f, "\n\tA:  {:#X}", self.reg_a);
+		write!(f, "\n\tX:  {:#X}", self.reg_x);
+		write!(f, "\n\tY:  {:#X}", self.reg_y);
+		write!(f, "\n\tP:  {:#X}", self.reg_p);
+		write!(f, "\n\tS:  {:#X}", self.reg_s);
+		write!(f, "\n\tPC: {:#X}", self.reg_pc);
+		write!(f, "\n}}")
 	}
 }
