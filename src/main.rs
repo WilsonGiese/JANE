@@ -1,10 +1,23 @@
+mod cpu;
+
+use cpu::CPU;
+
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::Result;
 use std::path::Path;
+use std::io::Result;
 
 fn main() {
-    read_rom("roms/smb.nes").unwrap();
+	let mut cpu = CPU::default();
+	cpu.power_up();
+	println!("{:#?}", cpu);
+
+    let buffer = read_rom("roms/smb.nes").unwrap();
+	// Roms begin with first 3 bytes = "NES"
+	println!("First 3 bytes:");
+	for b in &buffer[0..3] {
+		println!("{:#x} {}", b, *b as char);
+	}
 }
 
 // Read bytes from NES rom from file
@@ -15,12 +28,6 @@ fn read_rom<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
 
 	let mut rom = try!(File::open(path));
 	try!(rom.read_to_end(&mut buffer));
-
-	// Roms begin with first 3 bytes = "NES"
-	println!("First 3 bytes:");
-	for b in &buffer[0..3] {
-		println!("{:#x} {}", b, *b as char);
-	}
 
 	Ok(buffer)
 }
