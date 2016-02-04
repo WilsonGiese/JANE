@@ -1,4 +1,3 @@
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -26,26 +25,31 @@ struct Header {
 	prg_ram_size: u8,
 	flags6: Flags6,
 	flags7: Flags7,
-	// TODO: Flags 9,10
+	mapper_number: u8,
+	// TODO: Flags 9,10 (Ignoring for now; flags 9 is unused and flags 10 is unofficial)
 }
 
 impl Header {
 	fn new(data: &[u8; 16]) -> Header {
-		Header {
+		let mut header = Header {
 			prg_rom_size: data[4],
 			chr_rom_size: data[5],
 			prg_ram_size: data[8],
 			flags6: Flags6::new(&data[6]),
-			flags7: Flags7::new(&data[7])
-		}
+			flags7: Flags7::new(&data[7]),
+			mapper_number: 0
+		};
+		// Set mapper number by combing upper and lower bits from flags
+		header.mapper_number = (header.flags7.mapper_upper << 4) & header.flags6.mapper_lower;
+		header
 	}
 }
 
-/// Flags 6
+/// Flags 6 (1 Byte)
 ///   0: Vertical arrangement/horizontal mirroring (CIRAM A10 = PPU A11)
 ///      Horizontal arrangement/vertical mirroring (CIRAM A10 = PPU A10)
 ///   1: Cartridge contains battery-backed PRG RAM ($6000-7FFF)
-/// 2-3: 512-byte trainer at $7000-$71FF (stored before PRG data
+///   2: 512-byte trainer at $7000-$71FF (stored before PRG data
 ///   3: Four-screen VRAM
 /// 4-7: Lower part of mapper number
 ///
@@ -71,11 +75,10 @@ impl Flags6 {
 	}
 }
 
-/// Flags 7
+/// Flags 7 (1 Byte)
 ///   0: vs Unisystem
 ///   1: PlayChoice-10 (8KB of Hint Screen data stored after CHR data)
 /// 2-3: If equal to 2, flags 8-15 are in NES 2.0 format
-///   3: four-screen VRAM
 /// 4-7: Upper part of mapper number
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_6
@@ -118,7 +121,7 @@ impl Ines {
 
 		// First 4 bytes must be the identifier for iNes files
 		if header_data[0..4] != IDENTIFIER {
-			return Err(Error::new(ErrorKind::Other, format!("File is not in iNES file format!")));
+			return Err(Error::new(ErrorKind::Other, "File is not in iNES file format!"));
 		}
 
 		Ok(Ines {
