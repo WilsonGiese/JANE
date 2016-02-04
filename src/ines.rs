@@ -25,7 +25,8 @@ struct Header {
 	chr_rom_size: u8,
 	prg_ram_size: u8,
 	flags6: Flags6,
-	// TODO: Flags 7,9,10
+	flags7: Flags7,
+	// TODO: Flags 9,10
 }
 
 impl Header {
@@ -34,17 +35,19 @@ impl Header {
 			prg_rom_size: data[4],
 			chr_rom_size: data[5],
 			prg_ram_size: data[8],
-			flags6: Flags6::new(&data[6])
+			flags6: Flags6::new(&data[6]),
+			flags7: Flags7::new(&data[7])
 		}
 	}
 }
 
 /// Flags 6
-///   0: vs Unisystem
-///   1: PlayChoice-10 (8KB of Hint Screen data stored after CHR data)
-/// 2-3: If equal to 2, flags 8-15 are in NES 2.0 format
-///   3: four-screen VRAM
-/// 4-7: Ignored (part of mapper number)
+///   0: Vertical arrangement/horizontal mirroring (CIRAM A10 = PPU A11)
+///      Horizontal arrangement/vertical mirroring (CIRAM A10 = PPU A10)
+///   1: Cartridge contains battery-backed PRG RAM ($6000-7FFF)
+/// 2-3: 512-byte trainer at $7000-$71FF (stored before PRG data
+///   3: Four-screen VRAM
+/// 4-7: Lower part of mapper number
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_6
 #[derive(Debug)]
@@ -52,16 +55,45 @@ struct Flags6 {
 	horizontal_arrangement: bool,
 	battery_backed_prg_ram: bool,
 	trainer: bool,
-	four_screen_vram: bool
+	four_screen_vram: bool,
+	mapper_lower: u8
 }
 
 impl Flags6 {
 	fn new(data: &u8) -> Flags6 {
 		Flags6 {
-			horizontal_arrangement: data & 0b1 == 1,
-			battery_backed_prg_ram: data & 0b10 == 1,
-			trainer: data & 0b100 == 1,
-			four_screen_vram: data & 0b1000 == 1
+			horizontal_arrangement: data & 0b1 == 0b1,
+			battery_backed_prg_ram: data & 0b10 == 0b10,
+			trainer: data & 0b100 == 0b100,
+			four_screen_vram: data & 0b1000 == 0b1000,
+			mapper_lower: data >> 4
+		}
+	}
+}
+
+/// Flags 7
+///   0: vs Unisystem
+///   1: PlayChoice-10 (8KB of Hint Screen data stored after CHR data)
+/// 2-3: If equal to 2, flags 8-15 are in NES 2.0 format
+///   3: four-screen VRAM
+/// 4-7: Upper part of mapper number
+///
+/// http://wiki.nesdev.com/w/index.php/INES#Flags_6
+#[derive(Debug)]
+struct Flags7 {
+	vs_unisystem: bool,
+	playchoice_10: bool,
+	ines_2: bool,
+	mapper_upper: u8
+}
+
+impl Flags7 {
+	fn new(data: &u8) -> Flags7 {
+		Flags7 {
+			vs_unisystem: data & 0b1 == 0b1,
+			playchoice_10: data & 0b10 == 0b10,
+			ines_2: data >> 6 == 2u8,
+			mapper_upper: data >> 4
 		}
 	}
 }
