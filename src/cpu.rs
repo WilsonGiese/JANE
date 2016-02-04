@@ -40,13 +40,13 @@ impl CPU {
 
 impl fmt::Display for CPU {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "CPU {{");
-		write!(f, "\n\tA:  {:#X}", self.reg_a);
-		write!(f, "\n\tX:  {:#X}", self.reg_x);
-		write!(f, "\n\tY:  {:#X}", self.reg_y);
-		write!(f, "\n\tP:  {:#X}", self.reg_p);
-		write!(f, "\n\tS:  {:#X}", self.reg_s);
-		write!(f, "\n\tPC: {:#X}", self.reg_pc);
-		write!(f, "\n}}")
+		writeln!(f, "CPU {{").unwrap();
+		writeln!(f, "\tA:  {:#X}", self.reg_a).unwrap();
+		writeln!(f, "\tX:  {:#X}", self.reg_x).unwrap();
+		writeln!(f, "\tY:  {:#X}", self.reg_y).unwrap();
+		writeln!(f, "\tP:  {:#X}", self.reg_p).unwrap();
+		writeln!(f, "\tS:  {:#X}", self.reg_s).unwrap();
+		writeln!(f, "\tPC: {:#X}", self.reg_pc).unwrap();
+		writeln!(f, "}}")
 	}
 }
