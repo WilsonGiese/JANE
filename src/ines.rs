@@ -36,18 +36,22 @@ pub struct Header {
 }
 
 impl Header {
-	fn new(data: &[u8; 16]) -> Header {
-		let mut header = Header {
-			prg_rom_size: data[4],
-			chr_rom_size: data[5],
-			prg_ram_size: data[8],
-			flags6: Flags6::new(&data[6]),
-			flags7: Flags7::new(&data[7]),
-			mapper_number: 0
-		};
-		// Set mapper number by combing upper and lower bits from flags
-		header.mapper_number = (header.flags7.mapper_upper << 4) & header.flags6.mapper_lower;
-		header
+	fn new(data: &[u8; 16]) -> Result<Header> {
+		if data[0..4] != IDENTIFIER {
+			Err(Error::new(ErrorKind::Other, "File is not in iNES file format!"))
+		} else {
+			let mut header = Header {
+				prg_rom_size: data[4],
+				chr_rom_size: data[5],
+				prg_ram_size: data[8],
+				flags6: Flags6::new(&data[6]),
+				flags7: Flags7::new(&data[7]),
+				mapper_number: 0
+			};
+			// Set mapper number by combing upper and lower bits from flags
+			header.mapper_number = (header.flags7.mapper_upper << 4) & header.flags6.mapper_lower;
+			Ok(header)
+		}
 	}
 }
 
@@ -128,7 +132,7 @@ impl Ines {
 			Err(_) => return Err(Error::new(ErrorKind::Other, "Failed to read header!")),
 			_ => ()
 		}
-		let header = Header::new(&header_data);
+		let header = try!(Header::new(&header_data));
 
 		// Lod all data after header
 		let mut data = Vec::<u8>::new();
