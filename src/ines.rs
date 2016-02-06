@@ -7,6 +7,12 @@ use std::io::Result;
 /// Identifier should always be the first 4 bytes of iNES header
 const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 
+/// PRG ROM Unit Size (16 KB)
+const PRG_UNIT_SIZE: usize = 16 * 1024;
+
+// CHR ROM Unit Size (8 KB)
+const CHR_UNIT_SIZE: usize = 8 * 1024;
+
 /// iNES Header (16 Bytes)
 /// Format:
 ///   0-3: Identifier
@@ -19,7 +25,7 @@ const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 ///    10: Flags
 /// 11-15: Zero filled
 #[derive(Debug)]
-struct Header {
+pub struct Header {
 	prg_rom_size: u8,
 	chr_rom_size: u8,
 	prg_ram_size: u8,
@@ -81,7 +87,7 @@ impl Flags6 {
 /// 2-3: If equal to 2, flags 8-15 are in NES 2.0 format
 /// 4-7: Upper part of mapper number
 ///
-/// http://wiki.nesdev.com/w/index.php/INES#Flags_6
+/// http://wiki.nesdev.com/w/index.php/INES#Flags_7
 #[derive(Debug)]
 struct Flags7 {
 	vs_unisystem: bool,
@@ -105,27 +111,45 @@ impl Flags7 {
 /// 	Note: Ignoring trainer
 #[derive(Debug)]
 pub struct Ines {
-	header: Header,
-	// prg_rom: Vec<u8>,
-	// chr_rom: Vec<u8>,
+	pub header: Header,
+	pub prg_rom: Vec<u8>,
+	pub chr_rom: Vec<u8>,
 	// inst_rom: Vec<u8>,
 	// p_rom: Vec<u8>
 }
 
 impl Ines {
 	pub fn open<P: AsRef<Path>>(path: P) -> Result<Ines> {
-		let mut header_data: [u8; 16] = [0; 16];
-
 		let mut file = try!(File::open(path));
-		try!(file.read_exact(&mut header_data));
 
-		// First 4 bytes must be the identifier for iNes files
-		if header_data[0..4] != IDENTIFIER {
-			return Err(Error::new(ErrorKind::Other, "File is not in iNES file format!"));
+		// Load header data
+		let mut header_data: [u8; 16] = [0; 16];
+		match file.read_exact(&mut header_data) {
+			Err(_) => return Err(Error::new(ErrorKind::Other, "Failed to read header!")),
+			_ => ()
 		}
+		let header = Header::new(&header_data);
+
+		// Lod all data after header
+		let mut data = Vec::<u8>::new();
+		try!(file.read_to_end(&mut data));
+
+		// Get PRG ROM
+		if data.len() < header.prg_rom_size as usize * PRG_UNIT_SIZE {
+			return Err(Error::new(ErrorKind::Other, "PRG ROM not found or incomplete!"));
+		}
+		let (prg_rom, data) = data.split_at(header.prg_rom_size as usize * PRG_UNIT_SIZE);
+
+		// Get CHR ROM
+		if data.len() < header.chr_rom_size as usize * CHR_UNIT_SIZE {
+			return Err(Error::new(ErrorKind::Other, "CHR ROM not found or incomplete!"));
+		}
+		let (chr_rom, data) = data.split_at(header.chr_rom_size as usize * CHR_UNIT_SIZE);
 
 		Ok(Ines {
-			header: Header::new(&header_data)
+			header: header,
+			prg_rom: prg_rom.to_vec(),
+			chr_rom: chr_rom.to_vec()
 		})
 	}
 }
