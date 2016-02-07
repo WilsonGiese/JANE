@@ -52,6 +52,7 @@ impl CPU {
 	pub fn execute(&mut self, instruction: u8) {
 		match instruction {
 			0x78 => self.sei(),
+			0xD8 => self.cld(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
 		println!("Executed instruction: {:#X}", instruction);
@@ -60,6 +61,16 @@ impl CPU {
 	/// SEI Set interrupt disable status
 	fn sei(&mut self) {
 		self.reg_p.irq_disable = true;
+	}
+
+	/// CLD Clear decimal status
+	fn cld(&mut self) {
+		self.reg_p.decimal = false;
+	}
+
+	// LDA Load accumulator with memory
+	fn lda(&mut self) {
+		// TODO: Implement addressing modes
 	}
 }
 
