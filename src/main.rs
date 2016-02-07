@@ -5,10 +5,6 @@ use cpu::CPU;
 use ines::Ines;
 
 fn main() {
-	let mut cpu = CPU::default();
-	cpu.power_up();
-	println!("{}", cpu);
-
     let ines = Ines::open("roms/smb.nes").unwrap();
 	println!("{:#?}", ines.header);
 
@@ -21,4 +17,11 @@ fn main() {
 	for i in 0..10 {
 		println!("{:#X}", ines.chr_rom.get(i).unwrap());
 	}
+
+	let mut cpu = CPU::default();
+	println!("Before power up: {}", cpu);
+	cpu.power_up();
+	println!("After power up: {}", cpu);
+	cpu.run(ines);
+	println!("After run: {}", cpu);
 }
