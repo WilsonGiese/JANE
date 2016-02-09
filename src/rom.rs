@@ -134,23 +134,5 @@ impl Rom {
 			header: header,
 			data: data
 		})
-
-		// Get PRG ROM
-		// if data.len() < header.prg_rom_size as usize * PRG_UNIT_SIZE {
-		// 	return Err(Error::new(ErrorKind::Other, "PRG ROM not found or incomplete!"));
-		// }
-		// let (prg_rom, data) = data.split_at(header.prg_rom_size as usize * PRG_UNIT_SIZE);
-		//
-		// // Get CHR ROM
-		// if data.len() < header.chr_rom_size as usize * CHR_UNIT_SIZE {
-		// 	return Err(Error::new(ErrorKind::Other, "CHR ROM not found or incomplete!"));
-		// }
-		// let (chr_rom, data) = data.split_at(header.chr_rom_size as usize * CHR_UNIT_SIZE);
-
-		// Ok(Rom {
-		// 	header: header,
-		// 	prg_rom: prg_rom.to_vec(),
-		// 	chr_rom: chr_rom.to_vec()
-		// })
 	}
 }
