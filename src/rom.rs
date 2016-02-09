@@ -7,12 +7,6 @@ use std::io::Result;
 /// Identifier should always be the first 4 bytes of iNES header
 const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 
-/// PRG ROM Unit Size (16 KB)
-const PRG_UNIT_SIZE: usize = 16 * 1024;
-
-// CHR ROM Unit Size (8 KB)
-const CHR_UNIT_SIZE: usize = 8 * 1024;
-
 /// iNES Header (16 Bytes)
 /// Format:
 ///   0-3: Identifier
@@ -111,19 +105,17 @@ impl Flags7 {
 	}
 }
 
-/// iNES (.nes) file format
-/// 	Note: Ignoring trainer
+/// Rom data and ines header
 #[derive(Debug)]
-pub struct Ines {
+pub struct Rom {
 	pub header: Header,
-	pub prg_rom: Vec<u8>,
-	pub chr_rom: Vec<u8>,
+	pub data: Vec<u8>
 	// inst_rom: Vec<u8>,
 	// p_rom: Vec<u8>
 }
 
-impl Ines {
-	pub fn open<P: AsRef<Path>>(path: P) -> Result<Ines> {
+impl Rom {
+	pub fn open<P: AsRef<Path>>(path: P) -> Result<Rom> {
 		let mut file = try!(File::open(path));
 
 		// Load header data
@@ -134,26 +126,31 @@ impl Ines {
 		}
 		let header = try!(Header::new(&header_data));
 
-		// Lod all data after header
+		// Load all data after header
 		let mut data = Vec::<u8>::new();
 		try!(file.read_to_end(&mut data));
 
-		// Get PRG ROM
-		if data.len() < header.prg_rom_size as usize * PRG_UNIT_SIZE {
-			return Err(Error::new(ErrorKind::Other, "PRG ROM not found or incomplete!"));
-		}
-		let (prg_rom, data) = data.split_at(header.prg_rom_size as usize * PRG_UNIT_SIZE);
-
-		// Get CHR ROM
-		if data.len() < header.chr_rom_size as usize * CHR_UNIT_SIZE {
-			return Err(Error::new(ErrorKind::Other, "CHR ROM not found or incomplete!"));
-		}
-		let (chr_rom, data) = data.split_at(header.chr_rom_size as usize * CHR_UNIT_SIZE);
-
-		Ok(Ines {
+		Ok(Rom {
 			header: header,
-			prg_rom: prg_rom.to_vec(),
-			chr_rom: chr_rom.to_vec()
+			data: data
 		})
+
+		// Get PRG ROM
+		// if data.len() < header.prg_rom_size as usize * PRG_UNIT_SIZE {
+		// 	return Err(Error::new(ErrorKind::Other, "PRG ROM not found or incomplete!"));
+		// }
+		// let (prg_rom, data) = data.split_at(header.prg_rom_size as usize * PRG_UNIT_SIZE);
+		//
+		// // Get CHR ROM
+		// if data.len() < header.chr_rom_size as usize * CHR_UNIT_SIZE {
+		// 	return Err(Error::new(ErrorKind::Other, "CHR ROM not found or incomplete!"));
+		// }
+		// let (chr_rom, data) = data.split_at(header.chr_rom_size as usize * CHR_UNIT_SIZE);
+
+		// Ok(Rom {
+		// 	header: header,
+		// 	prg_rom: prg_rom.to_vec(),
+		// 	chr_rom: chr_rom.to_vec()
+		// })
 	}
 }

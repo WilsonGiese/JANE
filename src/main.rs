@@ -1,27 +1,18 @@
 mod cpu;
-mod ines;
+mod rom;
+mod memory;
 
 use cpu::CPU;
-use ines::Ines;
+use rom::Rom;
 
 fn main() {
-    let ines = Ines::open("roms/smb.nes").unwrap();
-	println!("{:#?}", ines.header);
+    let rom = Rom::open("roms/smb.nes").unwrap();
+	println!("{:#?}", rom.header);
 
-	println!("PRG ROM:");
-	for i in 0..10 {
-		println!("{:#X}", ines.prg_rom.get(i).unwrap());
-	}
-
-	println!("CHR ROM:");
-	for i in 0..10 {
-		println!("{:#X}", ines.chr_rom.get(i).unwrap());
-	}
-
-	let mut cpu = CPU::default();
+	let mut cpu = CPU::new();
 	println!("Before power up: {}", cpu);
 	cpu.power_up();
 	println!("After power up: {}", cpu);
-	cpu.run(ines);
+	cpu.run(rom);
 	println!("After run: {}", cpu);
 }
