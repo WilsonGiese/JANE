@@ -9,9 +9,9 @@ pub struct ReadOnlyMemory {
 }
 
 impl ReadOnlyMemory {
-	pub fn new(capacity: usize) -> ReadOnlyMemory {
+	pub fn new(data: Vec<u8>) -> ReadOnlyMemory {
 		ReadOnlyMemory {
-			data: Vec::with_capacity(capacity)
+			data: data
 		}
 	}
 }

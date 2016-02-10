@@ -1,7 +1,7 @@
 use memory::{ Memory, ReadOnlyMemory, ReadWriteMemory };
 use rom::Rom;
 use std::fmt;
-
+use std::boxed::*;
 //
 // CPU
 //
@@ -31,16 +31,17 @@ struct Registers {
 /// Model for the 6502 Microprocessor
 pub struct CPU {
 	registers: Registers,
-	ram: ReadWriteMemory
+	ram: ReadWriteMemory,
+	cartridge: Box<MappedMemory>
 }
 
 impl CPU {
 
-	pub fn new() -> CPU {
+	pub fn new(cartridge: Box<MappedMemory>) -> CPU {
 		CPU {
 			registers: Registers::default(),
 			ram: ReadWriteMemory::new(0x800),
-
+			cartridge: cartridge
 		}
 	}
 
@@ -60,8 +61,16 @@ impl CPU {
 		// TODO: Reset state
 	}
 
-	pub fn run(&mut self, rom: Rom) {
-		println!("Running game!")
+	pub fn run(&mut self) {
+		println!("Running game!");
+		self.registers.pc = 0x8000; // TODO Move this somewhere else
+
+		loop {
+			// Get instruction from prg
+			let instruction = self.cartridge.load_from_prg(self.registers.pc);
+			self.execute(instruction);
+			self.registers.pc += 1;
+		}
 	}
 
 	pub fn execute(&mut self, instruction: u8) {
@@ -113,29 +122,42 @@ impl fmt::Display for CPU {
 //   0x4020 -> 0xFFFF : Cartirdge Space
 //
 
-trait MappedMemory {
+pub trait MappedMemory {
 	fn load_from_prg(&self, address: u16) -> u8;
 	fn load_from_chr(&self, address: u16) -> u8;
 	fn store_to_prg(&mut self, address: u16, value: u8);
 	fn store_to_chr(&mut self, address: u16, value: u8);
-
 }
 
 // NROM (0x0) Mapper for cartridge space
 pub struct NRom {
 	// TODO PRG RAM
-	mirroring_prg: bool,
 	prg: ReadOnlyMemory,
-	chr: ReadOnlyMemory
+	chr: ReadOnlyMemory,
+	mirroring_prg: bool
 }
 
 impl NRom {
-	fn new(prg_rom_units: usize, chr_rom_units: usize) -> NRom {
-		NRom {
-			mirroring_prg: prg_rom_units > 1,
-			prg: ReadOnlyMemory::new(prg_rom_units * PRG_ROM_UNIT_SIZE),
-			chr: ReadOnlyMemory::new(chr_rom_units * CHR_ROM_UNIT_SIZE)
+	pub fn new(rom: Box<Rom>) -> Result<NRom, &'static str> {
+
+		let prg_size = rom.header.prg_rom_size as usize * PRG_ROM_UNIT_SIZE;
+		if  prg_size > rom.data.len() {
+			return Err("PRG ROM not found or incomplete!");
 		}
+		let (prg, data) = rom.data.split_at(prg_size);
+
+		let chr_size = rom.header.chr_rom_size as usize * CHR_ROM_UNIT_SIZE;
+		if  chr_size > data.len() {
+			return Err("CHR ROM not found or incomplete!");
+		}
+		let (chr, _) = data.split_at(chr_size);
+
+		let mirroring_prg = rom.header.prg_rom_size > 1;
+		Ok(NRom {
+			prg: ReadOnlyMemory::new(prg.to_vec()),
+			chr: ReadOnlyMemory::new(chr.to_vec()),
+			mirroring_prg: mirroring_prg
+		})
 	}
 }
 
@@ -152,6 +174,7 @@ impl MappedMemory for NRom {
 			if self.mirroring_prg && address > 0xBFFF {
 				return self.prg.load(address - 0xC000)
 			}
+			println!("Loading: {}", address - 0x8000);
 			self.prg.load(address - 0x8000)
 		}
 	}

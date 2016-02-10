@@ -20,12 +20,12 @@ const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 /// 11-15: Zero filled
 #[derive(Debug)]
 pub struct Header {
-	prg_rom_size: u8,
-	chr_rom_size: u8,
-	prg_ram_size: u8,
-	flags6: Flags6,
-	flags7: Flags7,
-	mapper_number: u8,
+	pub prg_rom_size: u8,
+	pub chr_rom_size: u8,
+	pub prg_ram_size: u8,
+	pub flags6: Flags6,
+	pub flags7: Flags7,
+	pub mapper_number: u8,
 	// TODO: Flags 9,10 (Ignoring for now; flags 9 is unused and flags 10 is unofficial)
 }
 
@@ -59,12 +59,12 @@ impl Header {
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_6
 #[derive(Debug)]
-struct Flags6 {
-	horizontal_arrangement: bool,
-	battery_backed_prg_ram: bool,
-	trainer: bool,
-	four_screen_vram: bool,
-	mapper_lower: u8
+pub struct Flags6 {
+	pub horizontal_arrangement: bool,
+	pub battery_backed_prg_ram: bool,
+	pub trainer: bool,
+	pub four_screen_vram: bool,
+	pub mapper_lower: u8
 }
 
 impl Flags6 {
@@ -87,11 +87,11 @@ impl Flags6 {
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_7
 #[derive(Debug)]
-struct Flags7 {
-	vs_unisystem: bool,
-	playchoice_10: bool,
-	ines_2: bool,
-	mapper_upper: u8
+pub struct Flags7 {
+	pub vs_unisystem: bool,
+	pub playchoice_10: bool,
+	pub ines_2: bool,
+	pub mapper_upper: u8
 }
 
 impl Flags7 {
@@ -110,8 +110,6 @@ impl Flags7 {
 pub struct Rom {
 	pub header: Header,
 	pub data: Vec<u8>
-	// inst_rom: Vec<u8>,
-	// p_rom: Vec<u8>
 }
 
 impl Rom {
