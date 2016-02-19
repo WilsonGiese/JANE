@@ -9,7 +9,7 @@ pub trait Memory {
 
 	fn storew(&mut self, address: u16, value: u16) {
 		self.store(address, value as u8);
-		self.store(address + 1, (value >> 8) as u8); 
+		self.store(address + 1, (value >> 8) as u8);
 	}
 }
 
@@ -55,4 +55,16 @@ impl Memory for ReadWriteMemory {
 	fn store(&mut self, address: u16, value: u8) {
 		self.data[address as usize] = value;
 	}
+}
+
+#[test]
+fn test_load() {
+	let mem = ReadOnlyMemory::new(Box::new(vec![0x1, 0x2, 0x3]));
+	assert!(mem.load(0x1) == 0x2);
+}
+
+#[test]
+fn test_loadw() {
+	let mem = ReadOnlyMemory::new(Box::new(vec![0x01, 0x02]));
+	assert!(mem.loadw(0x0) == 0x0201);
 }
