@@ -27,7 +27,7 @@ impl NRomPRG {
 impl Memory for NRomPRG {
 	fn load(&self, address: u16) -> u8 {
 		match address {
-			0x8000u16 ... 0xFFFF => {
+			0x8000 ... 0xFFFF => {
 				if self.is_mirroring_prg && address > 0xBFFF {
 					self.prg.load(address - 0xC000)
 				} else {

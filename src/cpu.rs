@@ -1,7 +1,5 @@
-use memory::{ Memory, ReadOnlyMemory, ReadWriteMemory };
-use rom::Rom;
+use memory::{ Memory, ReadWriteMemory };
 use std::fmt;
-use std::boxed::*;
 
 const NMI_VECTOR: u16 = 0xFFFA;
 const RESET_VECTOR: u16 = 0xFFFC; // Location of first instruction in memory
