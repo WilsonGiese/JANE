@@ -2,9 +2,10 @@ use memory::{ Memory, ReadOnlyMemory, ReadWriteMemory };
 use rom::Rom;
 use std::fmt;
 use std::boxed::*;
-//
-// CPU
-//
+
+const NMI_VECTOR: u16 = 0xFFFA;
+const RESET_VECTOR: u16 = 0xFFFC; // Location of first instruction in memory
+const IRQ_VECTOR: u16 = 0xFFFE;
 
 /// CPU Flags
 #[derive(Debug, Default)]
@@ -32,12 +33,13 @@ struct Registers {
 pub struct CPU {
 	registers: Registers,
 	ram: ReadWriteMemory,
-	cartridge: Box<MappedMemory>
+	cartridge: Box<Memory>
 }
 
 impl CPU {
 
-	pub fn new(cartridge: Box<MappedMemory>) -> CPU {
+	pub fn new(cartridge: Box<Memory>) -> CPU {
+
 		CPU {
 			registers: Registers::default(),
 			ram: ReadWriteMemory::new(0x800),
@@ -53,6 +55,7 @@ impl CPU {
 		self.registers.y = 0;
 		self.registers.s = 0xFD;
 		self.registers.p.irq_disable = true;
+		self.registers.pc = self.cartridge.loadw(RESET_VECTOR);
 	}
 
 	/// Emulate CPU reset
@@ -62,24 +65,35 @@ impl CPU {
 	}
 
 	pub fn run(&mut self) {
-		println!("Running game!");
-		self.registers.pc = 0x8000; // TODO Move this somewhere else
+		println!("Running!");
 
 		loop {
 			// Get instruction from prg
-			let instruction = self.cartridge.load_from_prg(self.registers.pc);
+			let instruction = self.load_pc();
 			self.execute(instruction);
-			self.registers.pc += 1;
 		}
 	}
 
+	fn load_pc(&mut self) -> u8 {
+		let value = self.cartridge.load(self.registers.pc);
+		self.registers.pc += 1;
+		value
+	}
+
+	fn loadw_pc(&mut self) -> u16 {
+		self.load_pc() as u16 | (self.load_pc() as u16) << 8
+	}
+
 	pub fn execute(&mut self, instruction: u8) {
+		println!("Executing instruction: {:#X}", instruction);
 		match instruction {
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
+			0xA9 => self.lda(),
+			0xBD => println!("LDA Absolute, X"),
+			0xAD => self.lda_a(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
-		println!("Executed instruction: {:#X}", instruction);
 	}
 
 	/// SEI Set interrupt disable status
@@ -95,6 +109,12 @@ impl CPU {
 	// LDA Load accumulator with memory
 	fn lda(&mut self) {
 		// TODO: Implement addressing modes
+		self.registers.a = self.load_pc();
+	}
+
+	fn lda_a(&mut self) {
+		let address = self.loadw_pc();
+		self.registers.a = self.load(address);
 	}
 }
 
@@ -122,74 +142,27 @@ impl fmt::Display for CPU {
 //   0x4020 -> 0xFFFF : Cartirdge Space
 //
 
-pub trait MappedMemory {
-	fn load_from_prg(&self, address: u16) -> u8;
-	fn load_from_chr(&self, address: u16) -> u8;
-	fn store_to_prg(&mut self, address: u16, value: u8);
-	fn store_to_chr(&mut self, address: u16, value: u8);
-}
-
-// NROM (0x0) Mapper for cartridge space
-pub struct NRom {
-	// TODO PRG RAM
-	prg: ReadOnlyMemory,
-	chr: ReadOnlyMemory,
-	mirroring_prg: bool
-}
-
-impl NRom {
-	pub fn new(rom: Box<Rom>) -> Result<NRom, &'static str> {
-
-		let prg_size = rom.header.prg_rom_size as usize * PRG_ROM_UNIT_SIZE;
-		if  prg_size > rom.data.len() {
-			return Err("PRG ROM not found or incomplete!");
-		}
-		let (prg, data) = rom.data.split_at(prg_size);
-
-		let chr_size = rom.header.chr_rom_size as usize * CHR_ROM_UNIT_SIZE;
-		if  chr_size > data.len() {
-			return Err("CHR ROM not found or incomplete!");
-		}
-		let (chr, _) = data.split_at(chr_size);
-
-		let mirroring_prg = rom.header.prg_rom_size > 1;
-		Ok(NRom {
-			prg: ReadOnlyMemory::new(prg.to_vec()),
-			chr: ReadOnlyMemory::new(chr.to_vec()),
-			mirroring_prg: mirroring_prg
-		})
-	}
-}
-
-// NROM Memory Map
-// 0x6000 -> 0x7FFF: PRG RAM,
-// 0x8000 -> 0xBFFF: First 16 KB of ROM.
-// 0xC000 -> 0xFFFF: Last 16 KB of ROM (or mirror of first 16 KB)
-impl MappedMemory for NRom {
-	fn load_from_prg(&self, address: u16) -> u8 {
-		if address < 0x8000 {
-			unimplemented!()
-		} else {
-			// Mirror last section of PRG ROM if it is only 16 KB
-			if self.mirroring_prg && address > 0xBFFF {
-				return self.prg.load(address - 0xC000)
-			}
-			println!("Loading: {}", address - 0x8000);
-			self.prg.load(address - 0x8000)
+impl Memory for CPU {
+	fn load(&self, address: u16) -> u8 {
+		println!("CPU Load: {:#X}", address);
+		match address {
+			0x0000 ... 0x07FF => self.ram.load(address),
+			0x0800 ... 0x0FFF => self.ram.load(address - 0x0800),
+			0x1000 ... 0x17FF => self.ram.load(address - 0x1000),
+			0x1800 ... 0x1FFF => self.ram.load(address - 0x1800),
+			0x0800 ... 0x1FFF => unimplemented!(),
+			0x2000 ... 0x2007 => unimplemented!(),
+			0x2008 ... 0x3FFF => unimplemented!(),
+			0x4000 ... 0x401F => unimplemented!(),
+			0x4020 ... 0xFFFF => {
+				println!("Accessing Cartridge");
+				return self.cartridge.load(address);
+			},
+			_ => unreachable!()
 		}
 	}
 
-	fn load_from_chr(&self, address: u16) -> u8 { self.chr.load(address) }
-	fn store_to_prg(&mut self, address: u16, value: u8) { self.prg.store(address, value) }
-	fn store_to_chr(&mut self, address: u16, value: u8) { self.chr.store(address, value) }
+	fn store(&mut self, address: u16, value: u8) {
+		unimplemented!();
+	}
 }
-
-///
-/// Constants
-///
-
-/// PRG ROM Unit Size (16 KB)
-const PRG_ROM_UNIT_SIZE: usize = 16 * 1024;
-
-// CHR ROM Unit Size (8 KB)
-const CHR_ROM_UNIT_SIZE: usize = 8 * 1024;

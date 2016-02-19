@@ -2,14 +2,23 @@
 pub trait Memory {
 	fn load(&self, address: u16) -> u8;
 	fn store(&mut self, address: u16, value: u8);
+
+	fn loadw(&self, address: u16) -> u16 {
+		self.load(address) as u16 | (self.load(address + 1) as u16) << 8
+	}
+
+	fn storew(&mut self, address: u16, value: u16) {
+		self.store(address, value as u8);
+		self.store(address + 1, (value >> 8) as u8); 
+	}
 }
 
 pub struct ReadOnlyMemory {
-	data: Vec<u8>
+	data: Box<Vec<u8>>
 }
 
 impl ReadOnlyMemory {
-	pub fn new(data: Vec<u8>) -> ReadOnlyMemory {
+	pub fn new(data: Box<Vec<u8>>) -> ReadOnlyMemory {
 		ReadOnlyMemory {
 			data: data
 		}

@@ -1,17 +1,19 @@
 mod cpu;
-mod rom;
+mod mapper;
 mod memory;
+mod rom;
 
-use cpu::{ CPU, NRom };
+use cpu::CPU;
 use rom::Rom;
+use mapper::{ NRomPRG };
 
 fn main() {
-    let rom = Box::new(Rom::open("roms/smb.nes").unwrap());
+    let rom = Rom::open("roms/dh.nes").unwrap();
 	println!("{:#?}", rom.header);
 
-	let mapped_memory = Box::new(NRom::new(rom).unwrap());
+	let prg_rom = Box::new(NRomPRG::new(rom.header.clone(), rom.prg));
 
-	let mut cpu = CPU::new(mapped_memory);
+	let mut cpu = CPU::new(prg_rom);
 	println!("Before power up: {}", cpu);
 	cpu.power_up();
 	println!("After power up: {}", cpu);

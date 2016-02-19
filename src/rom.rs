@@ -5,7 +5,13 @@ use std::io::{Error, ErrorKind};
 use std::io::Result;
 
 /// Identifier should always be the first 4 bytes of iNES header
-const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
+pub const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
+
+/// PRG ROM Unit Size (16 KB)
+pub const PRG_ROM_UNIT_SIZE: usize = 16 * 1024;
+
+// CHR ROM Unit Size (8 KB)
+pub const CHR_ROM_UNIT_SIZE: usize = 8 * 1024;
 
 /// iNES Header (16 Bytes)
 /// Format:
@@ -18,7 +24,7 @@ const IDENTIFIER: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 ///     9: Flags
 ///    10: Flags
 /// 11-15: Zero filled
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Header {
 	pub prg_rom_size: u8,
 	pub chr_rom_size: u8,
@@ -58,7 +64,7 @@ impl Header {
 /// 4-7: Lower part of mapper number
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_6
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Flags6 {
 	pub horizontal_arrangement: bool,
 	pub battery_backed_prg_ram: bool,
@@ -86,7 +92,7 @@ impl Flags6 {
 /// 4-7: Upper part of mapper number
 ///
 /// http://wiki.nesdev.com/w/index.php/INES#Flags_7
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Flags7 {
 	pub vs_unisystem: bool,
 	pub playchoice_10: bool,
@@ -99,17 +105,18 @@ impl Flags7 {
 		Flags7 {
 			vs_unisystem: data & 0b1 == 0b1,
 			playchoice_10: data & 0b10 == 0b10,
-			ines_2: data >> 6 == 2u8,
+			ines_2: (data >> 2) as u8 & 0b11 == 2,
 			mapper_upper: data >> 4
 		}
 	}
 }
 
-/// Rom data and ines header
+/// Header and PGR/CHR data
 #[derive(Debug)]
 pub struct Rom {
 	pub header: Header,
-	pub data: Vec<u8>
+	pub prg: Box<Vec<u8>>,
+	pub chr: Box<Vec<u8>>
 }
 
 impl Rom {
@@ -124,13 +131,28 @@ impl Rom {
 		}
 		let header = try!(Header::new(&header_data));
 
-		// Load all data after header
+		// Load all file data after header
 		let mut data = Vec::<u8>::new();
 		try!(file.read_to_end(&mut data));
 
+		// Load PRG data
+		let prg_size = header.prg_rom_size as usize * PRG_ROM_UNIT_SIZE;
+		if  prg_size > data.len() {
+			return Err(Error::new(ErrorKind::Other, "PRG ROM not found or incomplete!"));
+		}
+		let (prg, data) = data.split_at(prg_size);
+
+		// Load CHR data
+		let chr_size = header.chr_rom_size as usize * CHR_ROM_UNIT_SIZE;
+		if  chr_size > data.len() {
+			return Err(Error::new(ErrorKind::Other, "CHR ROM not found or incomplete!"));
+		}
+		let (chr, _) = data.split_at(chr_size);
+
 		Ok(Rom {
 			header: header,
-			data: data
+			prg: Box::new(prg.to_vec()),
+			chr: Box::new(chr.to_vec())
 		})
 	}
 }
