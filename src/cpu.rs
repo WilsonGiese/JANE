@@ -82,16 +82,49 @@ impl CPU {
 		self.load_pc() as u16 | (self.load_pc() as u16) << 8
 	}
 
+	fn immediate_mode(&mut self) -> u8 {
+		self.load_pc()
+	}
+
+	fn absolute_mode(&mut self) -> u8 {
+		let address = self.loadw_pc();
+		self.load(address)
+	}
+
+	fn absolute_x_mode(&mut self) -> u8 {
+		let address = self.loadw_pc() + self.registers.x as u16; // TODO handle overflow?
+		self.load(address)
+	}
+
+	fn absolute_y_mode(&mut self) -> u8 {
+		let address = self.loadw_pc() + self.registers.y as u16; // TODO handle overflow?
+		self.load(address)
+	}
+
 	pub fn execute(&mut self, instruction: u8) {
 		println!("Executing instruction: {:#X}", instruction);
 		match instruction {
+			// LDA
+			0xA9 => { let value = self.immediate_mode(); self.lda(value); },
+			0xA5 => unimplemented!(),
+			0xB5 => unimplemented!(),
+			0xAD => { let value = self.absolute_mode(); self.lda(value); },
+			0xBD => { let value = self.absolute_x_mode(); self.lda(value); },
+			0xB9 => { let value = self.absolute_y_mode(); self.lda(value); },
+			0xA1 => unimplemented!(),
+			0xB1 => unimplemented!(),
+
+
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
-			0xA9 => self.lda(),
-			0xBD => println!("LDA Absolute, X"),
-			0xAD => self.lda_a(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
+	}
+
+	// LDA - Load Accumulator with memory
+	// Operation: M -> A
+	fn lda(&mut self, value: u8) {
+		self.registers.a = value;
 	}
 
 	/// SEI Set interrupt disable status
@@ -102,17 +135,6 @@ impl CPU {
 	/// CLD Clear decimal status
 	fn cld(&mut self) {
 		self.registers.p.decimal = false;
-	}
-
-	// LDA Load accumulator with memory
-	fn lda(&mut self) {
-		// TODO: Implement addressing modes
-		self.registers.a = self.load_pc();
-	}
-
-	fn lda_a(&mut self) {
-		let address = self.loadw_pc();
-		self.registers.a = self.load(address);
 	}
 }
 
