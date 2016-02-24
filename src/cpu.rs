@@ -124,7 +124,7 @@ impl CPU {
 
 	fn inderect_y_mode(&mut self) -> u8 {
 		let address = self.load_pc(); // Zero page address
-		let address = self.loadw(address as u16) + self.registers.x as u16; // Indirect address
+		let address = self.loadw(address as u16) + self.registers.y as u16; // Indirect address
 		self.load(address)
 	}
 
