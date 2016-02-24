@@ -101,19 +101,59 @@ impl CPU {
 		self.load(address)
 	}
 
+	fn zero_page_mode(&mut self) -> u8 {
+		let address = self.load_pc();
+		self.load(address as u16)
+	}
+
+	fn zero_page_x_mode(&mut self) -> u8 {
+		let address = self.load_pc() + self.registers.x;
+		self.load(address as u16)
+	}
+
+	fn zero_page_y_mode(&mut self) -> u8 {
+		let address = self.load_pc() + self.registers.y;
+		self.load(address as u16)
+	}
+
+	fn inderect_x_mode(&mut self) -> u8 {
+		let address = self.load_pc() + self.registers.x; // Zero page address
+		let address = self.loadw(address as u16); // Indirect address
+		self.load(address)
+	}
+
+	fn inderect_y_mode(&mut self) -> u8 {
+		let address = self.load_pc(); // Zero page address
+		let address = self.loadw(address as u16) + self.registers.x as u16; // Indirect address
+		self.load(address)
+	}
+
 	pub fn execute(&mut self, instruction: u8) {
 		println!("Executing instruction: {:#X}", instruction);
 		match instruction {
 			// LDA
 			0xA9 => { let value = self.immediate_mode(); self.lda(value); },
-			0xA5 => unimplemented!(),
-			0xB5 => unimplemented!(),
+			0xA5 => { let value = self.zero_page_mode(); self.lda(value); },
+			0xB5 => { let value = self.zero_page_x_mode(); self.lda(value); },
 			0xAD => { let value = self.absolute_mode(); self.lda(value); },
 			0xBD => { let value = self.absolute_x_mode(); self.lda(value); },
 			0xB9 => { let value = self.absolute_y_mode(); self.lda(value); },
-			0xA1 => unimplemented!(),
-			0xB1 => unimplemented!(),
+			0xA1 => { let value = self.inderect_x_mode(); self.lda(value); },
+			0xB1 => { let value = self.inderect_y_mode(); self.lda(value); }
 
+			// LDX
+			0xA2 => { let value = self.immediate_mode(); self.ldx(value); },
+			0xA6 => { let value = self.zero_page_mode(); self.ldx(value); },
+			0xB6 => { let value = self.zero_page_y_mode(); self.ldx(value); },
+			0xAE => { let value = self.absolute_mode(); self.ldx(value); },
+			0xBE => { let value = self.absolute_y_mode(); self.lda(value); }
+
+			// LDY
+			0xA0 => { let value = self.immediate_mode(); self.ldy(value); },
+			0xA4 => { let value = self.zero_page_mode(); self.ldy(value); },
+			0xB4 => { let value = self.zero_page_x_mode(); self.ldy(value); },
+			0xAC => { let value = self.absolute_mode(); self.ldy(value); },
+			0xBC => { let value = self.absolute_x_mode(); self.ldy(value); }
 
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
@@ -127,6 +167,18 @@ impl CPU {
 		self.registers.a = value;
 	}
 
+	// LDX - Load X with memory
+	// Operation: M -> X
+	fn ldx(&mut self, value: u8) {
+		self.registers.x = value;
+	}
+
+	// LDY - Load Y with memory
+	// Operation M -> Y
+	fn ldy(&mut self, value: u8) {
+		self.registers.y = value;
+	}
+
 	/// SEI Set interrupt disable status
 	fn sei(&mut self) {
 		self.registers.p.irq_disable = true;
@@ -136,6 +188,8 @@ impl CPU {
 	fn cld(&mut self) {
 		self.registers.p.decimal = false;
 	}
+
+	fn nop() { }
 }
 
 impl fmt::Display for CPU {
