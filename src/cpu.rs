@@ -202,6 +202,22 @@ impl CPU {
 		self.registers.pc = value;
 	}
 
+	// DEC - Decrement memory by one
+ 	fn dec(&mut self, address: u16) {
+ 		let value = self.load(address);
+ 		self.store(address, value - 1);
+ 	}
+
+ 	// DEX - Decrement X by one
+ 	fn dex(&mut self) {
+ 		self.registers.x -= 1;
+ 	}
+
+ 	// DEY - Decrement X by one
+ 	fn dey(&mut self) {
+ 		self.registers.y -= 1;
+ 	}
+
 	/// SEI - Set interrupt disable status
 	fn sei(&mut self) {
 		self.registers.p.irq_disable = true;
