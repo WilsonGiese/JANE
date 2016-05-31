@@ -157,6 +157,9 @@ impl CPU {
 
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
+			0x18 => self.clc(),
+			0x58 => self.cli(),
+			0xB8 => self.clv(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
 	}
@@ -179,14 +182,45 @@ impl CPU {
 		self.registers.y = value;
 	}
 
-	/// SEI Set interrupt disable status
+	// DEC - Decrement memory by one
+	fn dec(&mut self, address: u16) {
+		let value = self.load(address);
+		self.store(address, value - 1);
+	}
+
+	// DEX - Decrement X by one
+	fn dex(&mut self) {
+		self.registers.x -= 1;
+	}
+
+	// DEY - Decrement X by one
+	fn dey(&mut self) {
+		self.registers.y -= 1;
+	}
+
+	/// SEI - Set interrupt disable status
 	fn sei(&mut self) {
 		self.registers.p.irq_disable = true;
 	}
 
-	/// CLD Clear decimal status
+	/// CLD - Clear decimal status
 	fn cld(&mut self) {
 		self.registers.p.decimal = false;
+	}
+
+	/// CLC - Clear carry flag
+	fn clc(&mut self) {
+		self.registers.p.carry = false;
+	}
+
+	/// CLI - Clear interrupt disable flag
+	fn cli(&mut self) {
+		self.registers.p.irq_disable = false;
+	}
+
+	/// CLV - Clear overflow flag
+	fn clv(&mut self) {
+		self.registers.p.overflow = false;
 	}
 
 	fn nop() { }
