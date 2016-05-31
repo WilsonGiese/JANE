@@ -56,6 +56,15 @@ impl CPU {
 		self.registers.pc = self.cartridge.loadw(RESET_VECTOR);
 	}
 
+	pub fn power_up_with_pc_override(&mut self, pc: u16) {
+		self.registers.a = 0;
+		self.registers.x = 0;
+		self.registers.y = 0;
+		self.registers.s = 0xFD;
+		self.registers.p.irq_disable = true;
+		self.registers.pc = pc;
+	}
+
 	/// Emulate CPU reset
 	///		http://wiki.nesdev.com/w/index.php/CPU_power_up_state#After_reset
 	pub fn reset(&mut self) {
@@ -155,6 +164,9 @@ impl CPU {
 			0xAC => { let value = self.absolute_mode(); self.ldy(value); },
 			0xBC => { let value = self.absolute_x_mode(); self.ldy(value); }
 
+			// JUMP
+			0x4C => { self.jmp(); }
+
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
@@ -177,6 +189,14 @@ impl CPU {
 	// Operation M -> Y
 	fn ldy(&mut self, value: u8) {
 		self.registers.y = value;
+	}
+
+	// JMP - Load PC in absolute mode
+	// (TODO: Get clarity... This Loads a word? Different from other absolute modes)
+	fn jmp(&mut self) {
+		let value = self.loadw_pc();
+		println!("JMP {:#X}", value);
+		self.registers.pc = value;
 	}
 
 	/// SEI Set interrupt disable status
