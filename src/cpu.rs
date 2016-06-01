@@ -257,6 +257,8 @@ impl CPU {
 	// JMP - Load PC in absolute mode
 	// Absolute mode for this instruction; instead of loading the value at PC + 1, PC + 2, we jump
 	// to it by setting PC.
+	// (PC + 1) -> PC Low
+	// (PC + 2) -> PC High
 	fn jmpa(&mut self) {
 		let value = self.loadw_pc();
 		println!("JMP {:#X}", value);
