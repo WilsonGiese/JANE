@@ -6,9 +6,13 @@ mod rom;
 use cpu::CPU;
 use rom::Rom;
 use mapper::{ NRomPRG };
+use std::env;
 
 fn main() {
-    let rom = Rom::open("roms/nestest.nes").unwrap();
+    // TODO: Impement real command line parsing, possibly with getopts or something similars
+    let rom_file = env::args().nth(1).unwrap();
+
+    let rom = Rom::open(rom_file).unwrap();
 	println!("{:#?}", rom.header);
 
 	let prg_rom = Box::new(NRomPRG::new(rom.header.clone(), rom.prg));
