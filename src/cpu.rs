@@ -165,7 +165,14 @@ impl CPU {
 			0xBC => { let value = self.absolute_x_mode(); self.ldy(value); }
 
 			// JUMP
-			0x4C => { self.jmp(); }
+			0x4C => { self.jmpa(); }
+			0x6C => { self.jmpi(); }
+
+
+
+
+
+
 
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
@@ -195,9 +202,20 @@ impl CPU {
 	}
 
 	// JMP - Load PC in absolute mode
-	// (TODO: Get clarity... This Loads a word? Different from other absolute modes)
-	fn jmp(&mut self) {
+	// Absolute mode for this instruction; instead of loading the value at PC + 1, PC + 2, we jump
+	// to it by setting PC.
+	fn jmpa(&mut self) {
 		let value = self.loadw_pc();
+		println!("JMP {:#X}", value);
+		self.registers.pc = value;
+	}
+
+	// JMP - Load PC in indirect mode
+	// Indirect mode for this instruction; instead of loading the value at PC + 1, PC + 2, we take
+	// load the word starting at PC + 1 and jump to it by setting PC
+	fn jmpi(&mut self) {
+		let address = self.loadw_pc();
+		let value = self.loadw(address);
 		println!("JMP {:#X}", value);
 		self.registers.pc = value;
 	}
