@@ -87,118 +87,171 @@ impl CPU {
 		value
 	}
 
+	fn get_pc(&mut self) -> u16 {
+		let address = self.registers.pc;
+		self.registers.pc += 1;
+		address
+	}
+
 	fn loadw_pc(&mut self) -> u16 {
 		self.load_pc() as u16 | (self.load_pc() as u16) << 8
 	}
 
-	fn immediate_mode(&mut self) -> u8 {
-		self.load_pc()
+	fn getw_pc(&mut self) -> u16 {
+		self.get_pc() as u16 | (self.get_pc() as u16) << 8
 	}
 
-	fn absolute_mode(&mut self) -> u8 {
-		let address = self.loadw_pc();
-		self.load(address)
+	fn immediate_mode(&mut self) -> u16 {
+		self.get_pc()
 	}
 
-	fn absolute_x_mode(&mut self) -> u8 {
-		let address = self.loadw_pc() + self.registers.x as u16; // TODO handle overflow?
-		self.load(address)
+	fn absolute_mode(&mut self) -> u16 {
+		self.getw_pc()
 	}
 
-	fn absolute_y_mode(&mut self) -> u8 {
-		let address = self.loadw_pc() + self.registers.y as u16; // TODO handle overflow?
-		self.load(address)
+	fn absolute_x_mode(&mut self) -> u16 {
+		self.getw_pc() + self.registers.x as u16
 	}
 
-	fn zero_page_mode(&mut self) -> u8 {
-		let address = self.load_pc();
-		self.load(address as u16)
+	fn absolute_y_mode(&mut self) -> u16 {
+		self.getw_pc() + self.registers.y as u16
 	}
 
-	fn zero_page_x_mode(&mut self) -> u8 {
-		let address = self.load_pc() + self.registers.x;
-		self.load(address as u16)
+	fn zero_page_mode(&mut self) -> u16 {
+		self.load_pc() as u16
 	}
 
-	fn zero_page_y_mode(&mut self) -> u8 {
-		let address = self.load_pc() + self.registers.y;
-		self.load(address as u16)
+	fn zero_page_x_mode(&mut self) -> u16 {
+		(self.load_pc() + self.registers.x) as u16
 	}
 
-	fn inderect_x_mode(&mut self) -> u8 {
+	fn zero_page_y_mode(&mut self) -> u16 {
+		(self.load_pc() + self.registers.y) as u16
+	}
+
+	fn inderect_x_mode(&mut self) -> u16 {
 		let address = self.load_pc() + self.registers.x; // Zero page address
-		let address = self.loadw(address as u16); // Indirect address
-		self.load(address)
+		self.loadw(address as u16) // Indirect address
 	}
 
-	fn inderect_y_mode(&mut self) -> u8 {
+	fn inderect_y_mode(&mut self) -> u16 {
 		let address = self.load_pc(); // Zero page address
-		let address = self.loadw(address as u16) + self.registers.y as u16; // Indirect address
-		self.load(address)
+		self.loadw(address as u16) + self.registers.y as u16 // Indirect address
 	}
 
 	pub fn execute(&mut self, instruction: u8) {
 		println!("Executing instruction: {:#X}", instruction);
 		match instruction {
+
+			// DECREMENT Instructions
+			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
+			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
+			0xCE => { let address = self.absolute_mode(); self.dec(address); },
+			0xDE => { let address = self.absolute_x_mode(); self.dec(address); },
+			0xCA => self.dex(),
+			0x88 => self.dey(),
+
+			// INCREMENT Instructions
+			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
+			0xF6 => { let address = self.zero_page_x_mode(); self.inc(address); },
+			0xEE => { let address = self.absolute_mode(); self.inc(address); },
+			0xFE => { let address = self.absolute_x_mode(); self.inc(address); },
+			0xE8 => self.inx(),
+			0xC8 => self.iny(),
+
 			// LDA
-			0xA9 => { let value = self.immediate_mode(); self.lda(value); },
-			0xA5 => { let value = self.zero_page_mode(); self.lda(value); },
-			0xB5 => { let value = self.zero_page_x_mode(); self.lda(value); },
-			0xAD => { let value = self.absolute_mode(); self.lda(value); },
-			0xBD => { let value = self.absolute_x_mode(); self.lda(value); },
-			0xB9 => { let value = self.absolute_y_mode(); self.lda(value); },
-			0xA1 => { let value = self.inderect_x_mode(); self.lda(value); },
-			0xB1 => { let value = self.inderect_y_mode(); self.lda(value); }
+			0xA9 => { let address = self.immediate_mode(); self.lda(address); },
+			0xA5 => { let address = self.zero_page_mode(); self.lda(address); },
+			0xB5 => { let address = self.zero_page_x_mode(); self.lda(address); },
+			0xAD => { let address = self.absolute_mode(); self.lda(address); },
+			0xBD => { let address = self.absolute_x_mode(); self.lda(address); },
+			0xB9 => { let address = self.absolute_y_mode(); self.lda(address); },
+			0xA1 => { let address = self.inderect_x_mode(); self.lda(address); },
+			0xB1 => { let address = self.inderect_y_mode(); self.lda(address); }
 
 			// LDX
-			0xA2 => { let value = self.immediate_mode(); self.ldx(value); },
-			0xA6 => { let value = self.zero_page_mode(); self.ldx(value); },
-			0xB6 => { let value = self.zero_page_y_mode(); self.ldx(value); },
-			0xAE => { let value = self.absolute_mode(); self.ldx(value); },
-			0xBE => { let value = self.absolute_y_mode(); self.lda(value); }
+			0xA2 => { let address = self.immediate_mode(); self.ldx(address); },
+			0xA6 => { let address = self.zero_page_mode(); self.ldx(address); },
+			0xB6 => { let address = self.zero_page_y_mode(); self.ldx(address); },
+			0xAE => { let address = self.absolute_mode(); self.ldx(address); },
+			0xBE => { let address = self.absolute_y_mode(); self.lda(address); }
 
 			// LDY
-			0xA0 => { let value = self.immediate_mode(); self.ldy(value); },
-			0xA4 => { let value = self.zero_page_mode(); self.ldy(value); },
-			0xB4 => { let value = self.zero_page_x_mode(); self.ldy(value); },
-			0xAC => { let value = self.absolute_mode(); self.ldy(value); },
-			0xBC => { let value = self.absolute_x_mode(); self.ldy(value); }
+			0xA0 => { let address = self.immediate_mode(); self.ldy(address); },
+			0xA4 => { let address = self.zero_page_mode(); self.ldy(address); },
+			0xB4 => { let address = self.zero_page_x_mode(); self.ldy(address); },
+			0xAC => { let address = self.absolute_mode(); self.ldy(address); },
+			0xBC => { let address = self.absolute_x_mode(); self.ldy(address); }
 
 			// JUMP
-			0x4C => { self.jmpa(); }
-			0x6C => { self.jmpi(); }
-
-
-
-
-
-
+			0x4C => self.jmpa(),
+			0x6C => self.jmpi(),
 
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
 			0x18 => self.clc(),
 			0x58 => self.cli(),
 			0xB8 => self.clv(),
+
+			0xEA => self.nop(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
 	}
 
+	// DEC - Decrement memory by one
+	// M - 1 -> M
+	fn dec(&mut self, address: u16) {
+		let value = self.load(address);
+		self.store(address, value - 1);
+	}
+
+	// DEX - Decrement X by one
+	// X - 1 -> X
+	fn dex(&mut self) {
+		self.registers.x -= 1;
+	}
+
+	// DEY - Decrement Y by one
+	// Y - 1 -> Y
+	fn dey(&mut self) {
+		self.registers.y -= 1;
+	}
+
+	// INC - Increment memory by one
+	// M + 1 -> M
+	fn inc(&mut self, address: u16) {
+		let value = self.load(address);
+		self.store(address, value + 1);
+	}
+
+	// INX - Increment X by one
+	// X + 1 -> X
+	fn inx(&mut self) {
+		self.registers.x += 1;
+	}
+
+	// INY - Increment Y by one
+	// Y + 1 -> Y
+	fn iny(&mut self) {
+		self.registers.y += 1;
+	}
+
 	// LDA - Load Accumulator with memory
 	// Operation: M -> A
-	fn lda(&mut self, value: u8) {
-		self.registers.a = value;
+	fn lda(&mut self, address: u16) {
+		self.registers.a = self.load(address);
 	}
 
 	// LDX - Load X with memory
 	// Operation: M -> X
-	fn ldx(&mut self, value: u8) {
-		self.registers.x = value;
+	fn ldx(&mut self, address: u16) {
+		self.registers.x = self.load(address);
 	}
 
 	// LDY - Load Y with memory
 	// Operation M -> Y
-	fn ldy(&mut self, value: u8) {
-		self.registers.y = value;
+	fn ldy(&mut self, address: u16) {
+		self.registers.y = self.load(address);
 	}
 
 	// JMP - Load PC in absolute mode
@@ -219,22 +272,6 @@ impl CPU {
 		println!("JMP {:#X}", value);
 		self.registers.pc = value;
 	}
-
-	// DEC - Decrement memory by one
- 	fn dec(&mut self, address: u16) {
- 		let value = self.load(address);
- 		self.store(address, value - 1);
- 	}
-
- 	// DEX - Decrement X by one
- 	fn dex(&mut self) {
- 		self.registers.x -= 1;
- 	}
-
- 	// DEY - Decrement X by one
- 	fn dey(&mut self) {
- 		self.registers.y -= 1;
- 	}
 
 	/// SEI - Set interrupt disable status
 	fn sei(&mut self) {
@@ -261,7 +298,7 @@ impl CPU {
 		self.registers.p.overflow = false;
 	}
 
-	fn nop() { }
+	fn nop(&self) { }
 }
 
 impl fmt::Display for CPU {
@@ -308,7 +345,7 @@ impl Memory for CPU {
 		}
 	}
 
-	fn store(&mut self, address: u16, value: u8) {
+	fn store(&mut self, _: u16, _: u8) {
 		unimplemented!();
 	}
 }
