@@ -289,9 +289,9 @@ impl CPU {
 	// Uses relative addressing mode; PC + value @ address
 	fn bcc(&mut self) {
 		if !self.registers.status.carry {
-			let value = self.get_pc(); 
+			let value = self.get_pc();
 			if value & 0x80 == 0x80 {
-				self.registers.pc -= value as u16;
+				self.registers.pc -= (value & 0x7F) as u16;
 			} else {
 				self.registers.pc += value as u16;
 			}
