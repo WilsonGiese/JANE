@@ -158,6 +158,16 @@ impl CPU {
 			0x61 => { let address = self.inderect_x_mode(); self.adc(address); },
 			0x71 => { let address = self.inderect_y_mode(); self.adc(address); },
 
+			// AND
+			0x29 => { let address = self.immediate_mode(); self.and(address); },
+			0x25 => { let address = self.zero_page_mode(); self.and(address); },
+			0x35 => { let address = self.zero_page_x_mode(); self.and(address); },
+			0x2D => { let address = self.absolute_mode(); self.and(address); },
+			0x3D => { let address = self.absolute_x_mode(); self.and(address); },
+			0x39 => { let address = self.absolute_y_mode(); self.and(address); },
+			0x21 => { let address = self.inderect_x_mode(); self.and(address); },
+			0x31 => { let address = self.inderect_y_mode(); self.and(address); },
+
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
 			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
@@ -234,6 +244,15 @@ impl CPU {
 		}
 		self.set_zn(new_a as u8);
 		self.registers.a = new_a as u8;
+	}
+
+	// AND - Apply bitwise AND to accumulator with memory
+	// A & M -> A
+	fn and(&mut self, address: u16) {
+		let value = self.load(address);
+		let new_a = self.registers.a & value;
+		self.set_zn(new_a);
+		self.registers.a = new_a;
 	}
 
 	// DEC - Decrement memory by one
