@@ -175,6 +175,9 @@ impl CPU {
 			0x1E => { let address = self.absolute_x_mode(); self.asl(address); },
 			0x0A => self.asla(),
 
+			// BRANCH Instructions
+			0x90 => self.bcc(),
+
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
 			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
@@ -279,6 +282,20 @@ impl CPU {
 		let new_a = self.registers.a << 1;
 		self.set_zn(new_a);
 		self.registers.a = new_a;
+	}
+
+	// BCC - Branch on Carry clear
+	// Branch on Carry == 0
+	// Uses relative addressing mode; PC + value @ address
+	fn bcc(&mut self) {
+		if !self.registers.status.carry {
+			let value = self.get_pc(); 
+			if value & 0x80 == 0x80 {
+				self.registers.pc -= value as u16;
+			} else {
+				self.registers.pc += value as u16;
+			}
+		}
 	}
 
 	// DEC - Decrement memory by one
