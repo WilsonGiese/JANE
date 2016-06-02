@@ -24,7 +24,7 @@ struct Registers {
 	y: u8,    // ''
 	s: u8,    // Stack pointer
 	pc: u16,  // Program counter (2 bytes wide)
-	p: Flags, // Status register used by various instructions and the ALU
+	status: Flags, // Status register used by various instructions and the ALU
 }
 
 /// Model for the 6502 Microprocessor
@@ -52,7 +52,7 @@ impl CPU {
 		self.registers.x = 0;
 		self.registers.y = 0;
 		self.registers.s = 0xFD;
-		self.registers.p.irq_disable = true;
+		self.registers.status.irq_disable = true;
 		self.registers.pc = self.cartridge.loadw(RESET_VECTOR);
 	}
 
@@ -61,7 +61,7 @@ impl CPU {
 		self.registers.x = 0;
 		self.registers.y = 0;
 		self.registers.s = 0xFD;
-		self.registers.p.irq_disable = true;
+		self.registers.status.irq_disable = true;
 		self.registers.pc = pc;
 	}
 
@@ -139,9 +139,24 @@ impl CPU {
 		self.loadw(address as u16) + self.registers.y as u16 // Indirect address
 	}
 
+	fn set_zn(&mut self, value: u8) {
+		self.registers.status.zero = value == 0;
+		self.registers.status.negative = value & 0x80 != 0;
+	}
+
 	pub fn execute(&mut self, instruction: u8) {
 		println!("Executing instruction: {:#X}", instruction);
 		match instruction {
+
+			// ADC
+			0x69 => { let address = self.immediate_mode(); self.adc(address); },
+			0x65 => { let address = self.zero_page_mode(); self.adc(address); },
+			0x75 => { let address = self.zero_page_x_mode(); self.adc(address); },
+			0x60 => { let address = self.absolute_mode(); self.adc(address); },
+			0x70 => { let address = self.absolute_x_mode(); self.adc(address); },
+			0x79 => { let address = self.absolute_y_mode(); self.adc(address); },
+			0x61 => { let address = self.inderect_x_mode(); self.adc(address); },
+			0x71 => { let address = self.inderect_y_mode(); self.adc(address); },
 
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
@@ -158,6 +173,10 @@ impl CPU {
 			0xFE => { let address = self.absolute_x_mode(); self.inc(address); },
 			0xE8 => self.inx(),
 			0xC8 => self.iny(),
+
+			// JUMP Instructions
+			0x4C => self.jmpa(),
+			0x6C => self.jmpi(),
 
 			// LDA
 			0xA9 => { let address = self.immediate_mode(); self.lda(address); },
@@ -183,10 +202,6 @@ impl CPU {
 			0xAC => { let address = self.absolute_mode(); self.ldy(address); },
 			0xBC => { let address = self.absolute_x_mode(); self.ldy(address); }
 
-			// JUMP
-			0x4C => self.jmpa(),
-			0x6C => self.jmpi(),
-
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
 			0x18 => self.clc(),
@@ -196,6 +211,29 @@ impl CPU {
 			0xEA => self.nop(),
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
+	}
+
+	// ADC - Add memory to accumulator with carry
+	// A + M + C -> C, A
+	fn adc(&mut self, address: u16) {
+		let value = self.load(address);
+		let mut new_a = self.registers.a as u16 + value as u16;
+
+		if self.registers.status.carry {
+			new_a += 1;
+		}
+
+		if new_a > 0xFF {
+			self.registers.status.carry = true;
+		}
+
+		if (self.registers.a ^ value) & 0x80 == 0 {
+			if (self.registers.a ^ new_a as u8) & 0x80 == 0x80 {
+				self.registers.status.overflow = true;
+			}
+		}
+		self.set_zn(new_a as u8);
+		self.registers.a = new_a as u8;
 	}
 
 	// DEC - Decrement memory by one
@@ -236,24 +274,6 @@ impl CPU {
 		self.registers.y += 1;
 	}
 
-	// LDA - Load Accumulator with memory
-	// Operation: M -> A
-	fn lda(&mut self, address: u16) {
-		self.registers.a = self.load(address);
-	}
-
-	// LDX - Load X with memory
-	// Operation: M -> X
-	fn ldx(&mut self, address: u16) {
-		self.registers.x = self.load(address);
-	}
-
-	// LDY - Load Y with memory
-	// Operation M -> Y
-	fn ldy(&mut self, address: u16) {
-		self.registers.y = self.load(address);
-	}
-
 	// JMP - Load PC in absolute mode
 	// Absolute mode for this instruction; instead of loading the value at PC + 1, PC + 2, we jump
 	// to it by setting PC.
@@ -275,29 +295,47 @@ impl CPU {
 		self.registers.pc = value;
 	}
 
+	// LDA - Load Accumulator with memory
+	// Operation: M -> A
+	fn lda(&mut self, address: u16) {
+		self.registers.a = self.load(address);
+	}
+
+	// LDX - Load X with memory
+	// Operation: M -> X
+	fn ldx(&mut self, address: u16) {
+		self.registers.x = self.load(address);
+	}
+
+	// LDY - Load Y with memory
+	// Operation M -> Y
+	fn ldy(&mut self, address: u16) {
+		self.registers.y = self.load(address);
+	}
+
 	/// SEI - Set interrupt disable status
 	fn sei(&mut self) {
-		self.registers.p.irq_disable = true;
+		self.registers.status.irq_disable = true;
 	}
 
 	/// CLD - Clear decimal status
 	fn cld(&mut self) {
-		self.registers.p.decimal = false;
+		self.registers.status.decimal = false;
 	}
 
 	/// CLC - Clear carry flag
 	fn clc(&mut self) {
-		self.registers.p.carry = false;
+		self.registers.status.carry = false;
 	}
 
 	/// CLI - Clear interrupt disable flag
 	fn cli(&mut self) {
-		self.registers.p.irq_disable = false;
+		self.registers.status.irq_disable = false;
 	}
 
 	/// CLV - Clear overflow flag
 	fn clv(&mut self) {
-		self.registers.p.overflow = false;
+		self.registers.status.overflow = false;
 	}
 
 	fn nop(&self) { }
@@ -311,7 +349,7 @@ impl fmt::Display for CPU {
 		writeln!(f, "    Y:  {:#X}", self.registers.y).unwrap();
 		writeln!(f, "    S:  {:#X}", self.registers.s).unwrap();
 		writeln!(f, "    PC: {:#X}", self.registers.pc).unwrap();
-		writeln!(f, "    P:  {:#?}", self.registers.p).unwrap();
+		writeln!(f, "    P:  {:#?}", self.registers.status).unwrap();
 		writeln!(f, "}}")
 	}
 }
