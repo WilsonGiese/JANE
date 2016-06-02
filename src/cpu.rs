@@ -168,6 +168,13 @@ impl CPU {
 			0x21 => { let address = self.inderect_x_mode(); self.and(address); },
 			0x31 => { let address = self.inderect_y_mode(); self.and(address); },
 
+			// ASL
+			0x06 => { let address = self.zero_page_mode(); self.asl(address); },
+			0x16 => { let address = self.zero_page_x_mode(); self.asl(address); },
+			0x0E => { let address = self.absolute_mode(); self.asl(address); },
+			0x1E => { let address = self.absolute_x_mode(); self.asl(address); },
+			0x0A => self.asla(),
+
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
 			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
@@ -251,6 +258,25 @@ impl CPU {
 	fn and(&mut self, address: u16) {
 		let value = self.load(address);
 		let new_a = self.registers.a & value;
+		self.set_zn(new_a);
+		self.registers.a = new_a;
+	}
+
+	// ASL - Shift memory left one bit
+	// M << 1 -> M
+	fn asl(&mut self, address: u16) {
+		let mut value = self.load(address);
+		self.registers.status.carry = value & 0x80 == 0x80;
+		value <<= 1;
+		self.set_zn(value);
+		self.store(address, value);
+	}
+
+	// ASL - Shift accumulator left one bit
+	// A << 1 -> A
+	fn asla(&mut self) {
+		self.registers.status.carry = self.registers.a & 0x80 == 0x80;
+		let new_a = self.registers.a << 1;
 		self.set_zn(new_a);
 		self.registers.a = new_a;
 	}
