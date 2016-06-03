@@ -177,6 +177,7 @@ impl CPU {
 
 			// BRANCH Instructions
 			0x90 => self.bcc(),
+			0xF0 => self.beq(), 
 
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
@@ -295,6 +296,15 @@ impl CPU {
 			} else {
 				self.registers.pc += value as u16;
 			}
+		}
+	}
+
+	// BEQ - Branch on Zero
+	// Branch on Zero == 1
+	fn beq(&mut self) {
+		if self.registers.status.zero {
+			let value = self.get_pc();
+			self.registers.pc += value as u16;
 		}
 	}
 
