@@ -139,6 +139,15 @@ impl CPU {
 		self.loadw(address as u16) + self.registers.y as u16 // Indirect address
 	}
 
+	fn relative_mode(&mut self) -> u16 {
+		let address = self.load_pc();
+		if address & 0x80 == 0x80 {
+			self.registers.pc - (address & 0x7F) as u16
+		} else {
+			self.registers.pc + address as u16
+		}
+	}
+
 	fn set_zn(&mut self, value: u8) {
 		self.registers.status.zero = value == 0;
 		self.registers.status.negative = value & 0x80 != 0;
@@ -176,7 +185,6 @@ impl CPU {
 			0x0A => self.asla(),
 
 			// BRANCH Instructions
-			// TODO: Implement relative addressing mode
 			0x90 => self.bcc(),
 			0xb0 => self.bcs(),
 			0xF0 => self.beq(),
@@ -292,12 +300,7 @@ impl CPU {
 	// Uses relative addressing mode; PC + value @ address
 	fn bcc(&mut self) {
 		if !self.registers.status.carry {
-			let value = self.get_pc();
-			if value & 0x80 == 0x80 {
-				self.registers.pc -= (value & 0x7F) as u16;
-			} else {
-				self.registers.pc += value as u16;
-			}
+			self.registers.pc = self.relative_mode();
 		}
 	}
 
@@ -305,12 +308,7 @@ impl CPU {
 	// Branch on Carry == 1
 	fn bcs(&mut self) {
 		if self.registers.status.carry {
-			let value = self.get_pc();
-			if value & 0x80 == 0x80 {
-				self.registers.pc -= (value & 0x7F) as u16;
-			} else {
-				self.registers.pc += value as u16;
-			}
+			self.registers.pc = self.relative_mode();
 		}
 	}
 
@@ -318,12 +316,7 @@ impl CPU {
 	// Branch on Zero == 1
 	fn beq(&mut self) {
 		if self.registers.status.zero {
-			let value = self.get_pc();
-			if value & 0x80 == 0x80 {
-				self.registers.pc -= (value & 0x7F) as u16;
-			} else {
-				self.registers.pc += value as u16;
-			}
+			self.registers.pc = self.relative_mode();
 		}
 	}
 
