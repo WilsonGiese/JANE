@@ -162,7 +162,7 @@ impl CPU {
 			0x65 => { let address = self.zero_page_mode(); self.adc(address); },
 			0x75 => { let address = self.zero_page_x_mode(); self.adc(address); },
 			0x60 => { let address = self.absolute_mode(); self.adc(address); },
-			0x70 => { let address = self.absolute_x_mode(); self.adc(address); },
+			0x7D => { let address = self.absolute_x_mode(); self.adc(address); },
 			0x79 => { let address = self.absolute_y_mode(); self.adc(address); },
 			0x61 => { let address = self.inderect_x_mode(); self.adc(address); },
 			0x71 => { let address = self.inderect_y_mode(); self.adc(address); },
@@ -190,6 +190,9 @@ impl CPU {
 			0xF0 => self.beq(),
 			0x30 => self.bmi(),
 			0xD0 => self.bne(),
+			0x10 => self.bpl(),
+			0x50 => self.bvc(),
+			0x70 => self.bvs(),
 
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
@@ -330,10 +333,36 @@ impl CPU {
 		}
 	}
 
+
+
 	// BNE - Branch on result not zero
-	// Branch on Negative == 1
+	// Branch on Zero == 0
 	fn bne(&mut self) {
 		if !self.registers.status.zero {
+			self.registers.pc = self.relative_mode();
+		}
+	}
+
+	// BNE - Branch on result plus
+	// Branch on Negative == 0
+	fn bpl(&mut self) {
+		if self.registers.status.negative {
+			self.registers.pc = self.relative_mode();
+		}
+	}
+
+	// BVC - Branch on overflow clear
+	// Branch on Overflow == 0
+	fn bvc(&mut self) {
+		if !self.registers.status.overflow {
+			self.registers.pc = self.relative_mode();
+		}
+	}
+
+	// BVS - Branch on overflow set
+	// Branch on Overflow == 1
+	fn bvs(&mut self) {
+		if self.registers.status.overflow {
 			self.registers.pc = self.relative_mode();
 		}
 	}
