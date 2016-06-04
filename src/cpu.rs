@@ -189,6 +189,7 @@ impl CPU {
 			0xb0 => self.bcs(),
 			0xF0 => self.beq(),
 			0x30 => self.bmi(),
+			0xD0 => self.bne(),
 
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
@@ -325,6 +326,14 @@ impl CPU {
 	// Branch on Negative == 1
 	fn bmi(&mut self) {
 		if self.registers.status.negative {
+			self.registers.pc = self.relative_mode();
+		}
+	}
+
+	// BNE - Branch on result not zero
+	// Branch on Negative == 1
+	fn bne(&mut self) {
+		if !self.registers.status.zero {
 			self.registers.pc = self.relative_mode();
 		}
 	}
