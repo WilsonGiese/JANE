@@ -176,8 +176,10 @@ impl CPU {
 			0x0A => self.asla(),
 
 			// BRANCH Instructions
+			// TODO: Implement relative addressing mode
 			0x90 => self.bcc(),
-			0xF0 => self.beq(), 
+			0xb0 => self.bcs(),
+			0xF0 => self.beq(),
 
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
@@ -285,11 +287,24 @@ impl CPU {
 		self.registers.a = new_a;
 	}
 
-	// BCC - Branch on Carry clear
+	// BCC - Branch on carry clear
 	// Branch on Carry == 0
 	// Uses relative addressing mode; PC + value @ address
 	fn bcc(&mut self) {
 		if !self.registers.status.carry {
+			let value = self.get_pc();
+			if value & 0x80 == 0x80 {
+				self.registers.pc -= (value & 0x7F) as u16;
+			} else {
+				self.registers.pc += value as u16;
+			}
+		}
+	}
+
+	// BCS - Branch on carry set
+	// Branch on Carry == 1
+	fn bcs(&mut self) {
+		if self.registers.status.carry {
 			let value = self.get_pc();
 			if value & 0x80 == 0x80 {
 				self.registers.pc -= (value & 0x7F) as u16;
@@ -304,7 +319,11 @@ impl CPU {
 	fn beq(&mut self) {
 		if self.registers.status.zero {
 			let value = self.get_pc();
-			self.registers.pc += value as u16;
+			if value & 0x80 == 0x80 {
+				self.registers.pc -= (value & 0x7F) as u16;
+			} else {
+				self.registers.pc += value as u16;
+			}
 		}
 	}
 
