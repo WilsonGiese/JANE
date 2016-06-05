@@ -116,6 +116,12 @@ impl CPU {
 		self.registers.s -= 1;
 	}
 
+	// Push a word onto the stack
+	fn pushw(&mut self, value: u16) {
+		self.push((value >> 8) as u8);
+		self.push(value as u8);
+	}
+
 	// Pop a value from the stack
 	fn pop(&mut self) -> u8 {
 		let address = (self.registers.s as u16) | 0x100;
@@ -392,7 +398,10 @@ impl CPU {
 	// BRK - Fork break
 	// Forced Interrupt PC + 2 toS P toS
 	fn brk(&mut self) {
-
+		let pc = self.registers.pc;
+		self.pushw(pc);
+		// UH OH... This instruction pushes status register to the stack
+		// Might want to refactor, converting from boolean struct to byte every time seems bad :(
 	}
 
 	// BVC - Branch on overflow clear
