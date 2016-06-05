@@ -253,6 +253,9 @@ impl CPU {
 			0xCA => self.dex(),
 			0x88 => self.dey(),
 
+			// BREAK
+			0x00 => self.brk(), 
+
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
 			0xF6 => { let address = self.zero_page_x_mode(); self.inc(address); },
@@ -412,9 +415,12 @@ impl CPU {
 	// Forced Interrupt PC + 2 toS P toS
 	fn brk(&mut self) {
 		let pc = self.registers.pc;
-		self.pushw(pc);
-		// UH OH... This instruction pushes status register to the stack
-		// Might want to refactor, converting from boolean struct to byte every time seems bad :(
+		self.pushw(pc + 1);
+		self.set_status(BREAK_FLAG, true);
+		let sr = self.registers.status;
+		self.push(sr);
+		self.set_status(IRQ_FLAG, true);
+		self.registers.pc = self.loadw(IRQ_VECTOR);
 	}
 
 	// BVC - Branch on overflow clear
