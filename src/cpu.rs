@@ -254,7 +254,17 @@ impl CPU {
 			0x88 => self.dey(),
 
 			// BREAK
-			0x00 => self.brk(), 
+			0x00 => self.brk(),
+
+			// CMP
+			0xC9 => { let address = self.immediate_mode(); self.cmp(address); },
+			0xC5 => { let address = self.zero_page_mode(); self.cmp(address); },
+			0xD5 => { let address = self.zero_page_x_mode(); self.cmp(address); },
+			0xCD => { let address = self.absolute_mode(); self.cmp(address); },
+			0xDD => { let address = self.absolute_x_mode(); self.cmp(address); },
+			0xD9 => { let address = self.absolute_y_mode(); self.cmp(address); },
+			0xC1 => { let address = self.inderect_x_mode(); self.cmp(address); },
+			0xD1 => { let address = self.inderect_y_mode(); self.cmp(address); },
 
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
@@ -539,6 +549,15 @@ impl CPU {
 	/// CLV - Clear overflow flag
 	fn clv(&mut self) {
 		self.set_status(OVERFLOW_FLAG, false);
+	}
+
+	// CMP - Compare memory and accumulator
+	// A - M
+	fn cmp(&mut self, address: u16) {
+		let value = self.load(address);
+		let a = self.registers.a;
+		self.set_status(CARRY_FLAG, a >= value);
+		self.set_zn(a - value);
 	}
 
 	fn nop(&self) { }
