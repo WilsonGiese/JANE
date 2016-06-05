@@ -176,12 +176,12 @@ impl CPU {
 		(self.load_pc() + self.registers.y) as u16
 	}
 
-	fn inderect_x_mode(&mut self) -> u16 {
+	fn indirect_x_mode(&mut self) -> u16 {
 		let address = self.load_pc() + self.registers.x; // Zero page address
 		self.loadw(address as u16) // Indirect address
 	}
 
-	fn inderect_y_mode(&mut self) -> u16 {
+	fn indirect_y_mode(&mut self) -> u16 {
 		let address = self.load_pc(); // Zero page address
 		self.loadw(address as u16) + self.registers.y as u16 // Indirect address
 	}
@@ -211,8 +211,8 @@ impl CPU {
 			0x60 => { let address = self.absolute_mode(); self.adc(address); },
 			0x7D => { let address = self.absolute_x_mode(); self.adc(address); },
 			0x79 => { let address = self.absolute_y_mode(); self.adc(address); },
-			0x61 => { let address = self.inderect_x_mode(); self.adc(address); },
-			0x71 => { let address = self.inderect_y_mode(); self.adc(address); },
+			0x61 => { let address = self.indirect_x_mode(); self.adc(address); },
+			0x71 => { let address = self.indirect_y_mode(); self.adc(address); },
 
 			// AND
 			0x29 => { let address = self.immediate_mode(); self.and(address); },
@@ -221,8 +221,8 @@ impl CPU {
 			0x2D => { let address = self.absolute_mode(); self.and(address); },
 			0x3D => { let address = self.absolute_x_mode(); self.and(address); },
 			0x39 => { let address = self.absolute_y_mode(); self.and(address); },
-			0x21 => { let address = self.inderect_x_mode(); self.and(address); },
-			0x31 => { let address = self.inderect_y_mode(); self.and(address); },
+			0x21 => { let address = self.indirect_x_mode(); self.and(address); },
+			0x31 => { let address = self.indirect_y_mode(); self.and(address); },
 
 			// ASL
 			0x06 => { let address = self.zero_page_mode(); self.asl(address); },
@@ -263,8 +263,8 @@ impl CPU {
 			0xCD => { let address = self.absolute_mode(); self.cmp(address); },
 			0xDD => { let address = self.absolute_x_mode(); self.cmp(address); },
 			0xD9 => { let address = self.absolute_y_mode(); self.cmp(address); },
-			0xC1 => { let address = self.inderect_x_mode(); self.cmp(address); },
-			0xD1 => { let address = self.inderect_y_mode(); self.cmp(address); },
+			0xC1 => { let address = self.indirect_x_mode(); self.cmp(address); },
+			0xD1 => { let address = self.indirect_y_mode(); self.cmp(address); },
 
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
@@ -285,8 +285,8 @@ impl CPU {
 			0xAD => { let address = self.absolute_mode(); self.lda(address); },
 			0xBD => { let address = self.absolute_x_mode(); self.lda(address); },
 			0xB9 => { let address = self.absolute_y_mode(); self.lda(address); },
-			0xA1 => { let address = self.inderect_x_mode(); self.lda(address); },
-			0xB1 => { let address = self.inderect_y_mode(); self.lda(address); }
+			0xA1 => { let address = self.indirect_x_mode(); self.lda(address); },
+			0xB1 => { let address = self.indirect_y_mode(); self.lda(address); }
 
 			// LDX
 			0xA2 => { let address = self.immediate_mode(); self.ldx(address); },
