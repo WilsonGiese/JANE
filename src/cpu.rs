@@ -194,6 +194,10 @@ impl CPU {
 			0x50 => self.bvc(),
 			0x70 => self.bvs(),
 
+			// BIT
+			0x24 => { let address = self.zero_page_mode(); self.bit(address); },
+			0x2C => { let address = self.absolute_mode(); self.bit(address); },
+
 			// DECREMENT Instructions
 			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
 			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
@@ -323,6 +327,15 @@ impl CPU {
 		if self.registers.status.zero {
 			self.registers.pc = self.relative_mode();
 		}
+	}
+
+	// BIT - Test bits in memory with accumulator
+	// A & M, M7 -> N, M6 -> V
+	fn bit(&mut self, address: u16) {
+		let value = self.load(address);
+		self.registers.status.negative = value & 0x80 == 0x80;
+		self.registers.status.overflow = value & 0x40 == 0x40;
+		self.registers.status.zero = self.registers.a & value == 0;
 	}
 
 	// BMI - Branch on result minus
