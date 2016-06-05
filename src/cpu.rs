@@ -356,12 +356,18 @@ impl CPU {
 		}
 	}
 
-	// BNE - Branch on result plus
-	// Branch on Negative == 0
+	// BPL - Branch on result plus
+	// Branch on Negative  == 0
 	fn bpl(&mut self) {
 		if self.registers.status.negative {
 			self.registers.pc = self.relative_mode();
 		}
+	}
+
+	// BRK - Fork break
+	// Forced Interrupt PC + 2 toS P toS
+	fn brk(&mut self) {
+
 	}
 
 	// BVC - Branch on overflow clear
@@ -529,7 +535,22 @@ impl Memory for CPU {
 		}
 	}
 
-	fn store(&mut self, _: u16, _: u8) {
-		unimplemented!();
+	fn store(&mut self, address: u16, value: u8) {
+		println!("CPU Load: {:#X}", address);
+		match address {
+			0x0000 ... 0x07FF => self.ram.store(address, value),
+			0x0800 ... 0x0FFF => self.ram.store(address - 0x0800, value),
+			0x1000 ... 0x17FF => self.ram.store(address - 0x1000, value),
+			0x1800 ... 0x1FFF => self.ram.store(address - 0x1800, value),
+			0x0800 ... 0x1FFF => unimplemented!(),
+			0x2000 ... 0x2007 => unimplemented!(),
+			0x2008 ... 0x3FFF => unimplemented!(),
+			0x4000 ... 0x401F => unimplemented!(),
+			0x4020 ... 0xFFFF => {
+				println!("Accessing Cartridge");
+				return self.cartridge.store(address, value);
+			},
+			_ => unreachable!()
+		}
 	}
 }
