@@ -519,11 +519,7 @@ impl Memory for CPU {
 	fn load(&self, address: u16) -> u8 {
 		println!("CPU Load: {:#X}", address);
 		match address {
-			0x0000 ... 0x07FF => self.ram.load(address),
-			0x0800 ... 0x0FFF => self.ram.load(address - 0x0800),
-			0x1000 ... 0x17FF => self.ram.load(address - 0x1000),
-			0x1800 ... 0x1FFF => self.ram.load(address - 0x1800),
-			0x0800 ... 0x1FFF => unimplemented!(),
+			0x0000 ... 0x1FFF => self.ram.load(address & 0x7FF),
 			0x2000 ... 0x2007 => unimplemented!(),
 			0x2008 ... 0x3FFF => unimplemented!(),
 			0x4000 ... 0x401F => unimplemented!(),
@@ -538,11 +534,7 @@ impl Memory for CPU {
 	fn store(&mut self, address: u16, value: u8) {
 		println!("CPU Load: {:#X}", address);
 		match address {
-			0x0000 ... 0x07FF => self.ram.store(address, value),
-			0x0800 ... 0x0FFF => self.ram.store(address - 0x0800, value),
-			0x1000 ... 0x17FF => self.ram.store(address - 0x1000, value),
-			0x1800 ... 0x1FFF => self.ram.store(address - 0x1800, value),
-			0x0800 ... 0x1FFF => unimplemented!(),
+			0x0000 ... 0x07FF => self.ram.store(address & 0x7FF, value),
 			0x2000 ... 0x2007 => unimplemented!(),
 			0x2008 ... 0x3FFF => unimplemented!(),
 			0x4000 ... 0x401F => unimplemented!(),
