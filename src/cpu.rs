@@ -81,6 +81,9 @@ impl CPU {
 		}
 	}
 
+
+	// Program Counter operations
+
 	fn load_pc(&mut self) -> u8 {
 		let value = self.cartridge.load(self.registers.pc);
 		self.registers.pc += 1;
@@ -100,6 +103,28 @@ impl CPU {
 	fn getw_pc(&mut self) -> u16 {
 		self.get_pc() as u16 | (self.get_pc() as u16) << 8
 	}
+
+
+	// Stack operations
+	// Notes: Uses a descending stack (grows downwards)
+	//        Hardcoded to Page 1 (0x100-0x1FF)
+
+	// Push a value to the stack
+	fn push(&mut self, value: u8) {
+		let address = (self.registers.s as u16) | 0x100;
+		self.store(address, value);
+		self.registers.s -= 1;
+	}
+
+	// Pop a value from the stack
+	fn pop(&mut self) -> u8 {
+		let address = (self.registers.s as u16) | 0x100;
+		self.registers.s += 1;
+		self.load(address)
+	}
+
+
+	// Addressing modes
 
 	fn immediate_mode(&mut self) -> u16 {
 		self.get_pc()
@@ -532,7 +557,7 @@ impl Memory for CPU {
 	}
 
 	fn store(&mut self, address: u16, value: u8) {
-		println!("CPU Load: {:#X}", address);
+		println!("CPU Store: {:#X} = {:#X}", address, value);
 		match address {
 			0x0000 ... 0x07FF => self.ram.store(address & 0x7FF, value),
 			0x2000 ... 0x2007 => unimplemented!(),
