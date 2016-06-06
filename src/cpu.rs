@@ -607,19 +607,25 @@ impl CPU {
 	// LDA - Load Accumulator with memory
 	// Operation: M -> A
 	fn lda(&mut self, address: u16) {
-		self.registers.a = self.load(address);
+		let new_a = self.load(address);
+		self.registers.a = new_a;
+		self.set_zn(new_a);
 	}
 
 	// LDX - Load X with memory
 	// Operation: M -> X
 	fn ldx(&mut self, address: u16) {
-		self.registers.x = self.load(address);
+		let new_x = self.load(address);
+		self.registers.x = new_x;
+		self.set_zn(new_x);
 	}
 
 	// LDY - Load Y with memory
 	// Operation M -> Y
 	fn ldy(&mut self, address: u16) {
-		self.registers.y = self.load(address);
+		let new_y = self.load(address);
+		self.registers.y = new_y;
+		self.set_zn(new_y);
 	}
 
 	// LSR - Shift memory right one bit
