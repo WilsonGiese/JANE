@@ -329,13 +329,33 @@ impl CPU {
 			0xAC => { let address = self.absolute_mode(); self.ldy(address); },
 			0xBC => { let address = self.absolute_x_mode(); self.ldy(address); }
 
+			// LSR
+			0x46 => { let address = self.zero_page_mode(); self.lsr(address); },
+			0x56 => { let address = self.zero_page_x_mode(); self.lsr(address); },
+			0x4E => { let address = self.absolute_mode(); self.lsr(address); },
+			0x5E => { let address = self.absolute_x_mode(); self.lsr(address); },
+			0x4A => self.lsra(),
+
+			// NOP
+			0xEA => self.nop(),
+
+			// ORA
+			0x09 => { let address = self.immediate_mode(); self.ora(address); },
+			0x05 => { let address = self.zero_page_mode(); self.ora(address); },
+			0x15 => { let address = self.zero_page_x_mode(); self.ora(address); },
+			0x0D => { let address = self.absolute_mode(); self.ora(address); },
+			0x1D => { let address = self.absolute_x_mode(); self.ora(address); },
+			0x19 => { let address = self.absolute_y_mode(); self.ora(address); },
+			0x01 => { let address = self.indirect_x_mode(); self.ora(address); },
+			0x11 => { let address = self.indirect_y_mode(); self.ora(address); }
+
 			0x78 => self.sei(),
 			0xD8 => self.cld(),
 			0x18 => self.clc(),
 			0x58 => self.cli(),
 			0xB8 => self.clv(),
 
-			0xEA => self.nop(),
+
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
 	}
@@ -602,6 +622,30 @@ impl CPU {
 		self.registers.y = self.load(address);
 	}
 
+	// LSR - Shift memory right one bit
+	// M >> 1 -> M
+	fn lsr(&mut self, address: u16) {
+		let value = self.load(address);
+		self.store(address, value >> 1);
+	}
+
+	// LSR - Shift accumulator right one bit
+	// A >> 1 -> A
+	fn lsra(&mut self) {
+		self.registers.a = self.registers.a >> 1;
+	}
+
+	// NOP - No Operation
+	fn nop(&self) { }
+
+	// ORA - OR memory with accumulator
+	// A | M -> A
+	fn ora(&mut self, address: u16) {
+		let new_a = self.registers.a | self.load(address);;
+		self.registers.a = new_a;
+		self.set_zn(new_a);
+	}
+
 	/// SEI - Set interrupt disable status
 	fn sei(&mut self) {
 		self.set_status(Flag::Irq, true);
@@ -626,8 +670,6 @@ impl CPU {
 	fn clv(&mut self) {
 		self.set_status(Flag::Overflow, false);
 	}
-
-	fn nop(&self) { }
 }
 
 impl fmt::Display for CPU {
