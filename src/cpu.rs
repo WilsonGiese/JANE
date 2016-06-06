@@ -251,14 +251,6 @@ impl CPU {
 			0x24 => { let address = self.zero_page_mode(); self.bit(address); },
 			0x2C => { let address = self.absolute_mode(); self.bit(address); },
 
-			// DECREMENT Instructions
-			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
-			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
-			0xCE => { let address = self.absolute_mode(); self.dec(address); },
-			0xDE => { let address = self.absolute_x_mode(); self.dec(address); },
-			0xCA => self.dex(),
-			0x88 => self.dey(),
-
 			// BREAK
 			0x00 => self.brk(),
 
@@ -281,6 +273,25 @@ impl CPU {
 			0xC0 => { let address = self.immediate_mode(); self.cpy(address) },
 			0xC4 => { let address = self.zero_page_mode(); self.cpy(address) },
 			0xCC => { let address = self.absolute_mode(); self.cpy(address) },
+
+			// DECREMENT Instructions
+			0xC6 => { let address = self.zero_page_mode(); self.dec(address); },
+			0xD6 => { let address = self.zero_page_x_mode(); self.dec(address); },
+			0xCE => { let address = self.absolute_mode(); self.dec(address); },
+			0xDE => { let address = self.absolute_x_mode(); self.dec(address); },
+			0xCA => self.dex(),
+			0x88 => self.dey(),
+
+			// EOR
+			0x49 => { let address = self.immediate_mode(); self.eor(address); },
+			0x45 => { let address = self.zero_page_mode(); self.eor(address); },
+			0x55 => { let address = self.zero_page_x_mode(); self.eor(address); },
+			0x4D => { let address = self.absolute_mode(); self.eor(address); },
+			0x5D => { let address = self.absolute_x_mode(); self.eor(address); },
+			0x59 => { let address = self.absolute_y_mode(); self.eor(address); },
+			0x41 => { let address = self.indirect_x_mode(); self.eor(address); },
+			0x51 => { let address = self.indirect_y_mode(); self.eor(address); },
+
 
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
@@ -512,6 +523,15 @@ impl CPU {
 	// Y - 1 -> Y
 	fn dey(&mut self) {
 		self.registers.y -= 1;
+	}
+
+	// EOR - Exclusive OR memory with accumulator
+	// A ^ M -> A
+	fn eor(&mut self, address: u16) {
+		let value = self.load(address);
+	 	let new_a = self.registers.a ^ value;
+		self.set_zn(new_a);
+		self.registers.a = new_a;
 	}
 
 	// INC - Increment memory by one
