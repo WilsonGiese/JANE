@@ -144,8 +144,8 @@ impl CPU {
 		self.push(value as u8);
 	}
 
-	// Pop a value from the stack
-	fn pop(&mut self) -> u8 {
+	// Pull a value from the stack
+	fn pull(&mut self) -> u8 {
 		let address = (self.registers.s as u16) | 0x100;
 		self.registers.s += 1;
 		self.load(address)
@@ -254,6 +254,12 @@ impl CPU {
 			// BREAK
 			0x00 => self.brk(),
 
+			// CLEAR Instructions
+			0xD8 => self.cld(),
+			0x18 => self.clc(),
+			0x58 => self.cli(),
+			0xB8 => self.clv(),
+
 			// CMP
 			0xC9 => { let address = self.immediate_mode(); self.cmp(address); },
 			0xC5 => { let address = self.zero_page_mode(); self.cmp(address); },
@@ -349,12 +355,16 @@ impl CPU {
 			0x01 => { let address = self.indirect_x_mode(); self.ora(address); },
 			0x11 => { let address = self.indirect_y_mode(); self.ora(address); }
 
-			0x78 => self.sei(),
-			0xD8 => self.cld(),
-			0x18 => self.clc(),
-			0x58 => self.cli(),
-			0xB8 => self.clv(),
+			// Push & Pull Instructions
+			0x48 => self.pha(),
+			0x08 => self.php(),
+			0x68 => self.pla(),
+			0x28 => self.plp(),
 
+			// SET Instructions
+			0x38 => self.sec(),
+			0xF8 => self.sed(),
+			0x78 => self.sei(),
 
 			_ => panic!("Unsupported instruction: {:#X}", instruction)
 		}
@@ -494,6 +504,26 @@ impl CPU {
 		if self.get_status(Flag::Overflow)  {
 			self.registers.pc = self.relative_mode();
 		}
+	}
+
+	/// CLD - Clear decimal status
+	fn cld(&mut self) {
+		self.set_status(Flag::Decimal, false);
+	}
+
+	/// CLC - Clear carry flag
+	fn clc(&mut self) {
+		self.set_status(Flag::Carry, false);
+	}
+
+	/// CLI - Clear interrupt disable flag
+	fn cli(&mut self) {
+		self.set_status(Flag::Irq, false);
+	}
+
+	/// CLV - Clear overflow flag
+	fn clv(&mut self) {
+		self.set_status(Flag::Overflow, false);
 	}
 
 	// Compare Helper
@@ -652,29 +682,48 @@ impl CPU {
 		self.set_zn(new_a);
 	}
 
-	/// SEI - Set interrupt disable status
+	// PHA - Push accumulator onto stack
+	// A -> toS
+	fn pha(&mut self) {
+		let a = self.registers.a;
+		self.push(a);
+	}
+
+	// PHP - Push processor status onto stack
+	// P -> toS
+	fn php(&mut self) {
+		let p = self.registers.status;
+		self.push(p);
+	}
+
+	// PLA - Pull accumulator from stack
+	// toS -> A
+	fn pla(&mut self) {
+		self.registers.a = self.pull();
+	}
+
+	// PLP - Pull processor status from stack
+	// toS -> P
+	fn plp(&mut self) {
+		self.registers.status = self.pull();
+	}
+
+	// SEC - Set carry
+	// 1 -> Status(Carry)
+	fn sec(&mut self) {
+		self.set_status(Flag::Carry, true);
+	}
+
+	// SED = Set decimal mode
+	// 1 -> Status(Decimal)
+	fn sed(&mut self) {
+		self.set_status(Flag::Decimal, true);
+	}
+
+	// SEI - Set interrupt disable status
+	// 1 -> Status(IRQ)
 	fn sei(&mut self) {
 		self.set_status(Flag::Irq, true);
-	}
-
-	/// CLD - Clear decimal status
-	fn cld(&mut self) {
-		self.set_status(Flag::Decimal, false);
-	}
-
-	/// CLC - Clear carry flag
-	fn clc(&mut self) {
-		self.set_status(Flag::Carry, false);
-	}
-
-	/// CLI - Clear interrupt disable flag
-	fn cli(&mut self) {
-		self.set_status(Flag::Irq, false);
-	}
-
-	/// CLV - Clear overflow flag
-	fn clv(&mut self) {
-		self.set_status(Flag::Overflow, false);
 	}
 }
 
