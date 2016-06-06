@@ -292,7 +292,6 @@ impl CPU {
 			0x41 => { let address = self.indirect_x_mode(); self.eor(address); },
 			0x51 => { let address = self.indirect_y_mode(); self.eor(address); },
 
-
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
 			0xF6 => { let address = self.zero_page_x_mode(); self.inc(address); },
@@ -304,6 +303,7 @@ impl CPU {
 			// JUMP Instructions
 			0x4C => self.jmpa(),
 			0x6C => self.jmpi(),
+			0x20 => self.jsr(),
 
 			// LDA
 			0xA9 => { let address = self.immediate_mode(); self.lda(address); },
@@ -572,6 +572,16 @@ impl CPU {
 		let value = self.loadw(address);
 		println!("JMP {:#X}", value);
 		self.registers.pc = value;
+	}
+
+	// JSR - Jump to new location saving return address
+	// PC + 2 toS, (PC + 1) -> PCL
+	//             (PC + 2) -> PCH
+	fn jsr(&mut self) {
+		let address = self.loadw_pc();
+		let pc = self.registers.pc;
+		self.pushw(pc - 1);
+		self.registers.pc = address;
 	}
 
 	// LDA - Load Accumulator with memory
