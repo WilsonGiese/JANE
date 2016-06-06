@@ -3,7 +3,7 @@ use std::fmt;
 
 const NMI_VECTOR:   u16 = 0xFFFA;
 const RESET_VECTOR: u16 = 0xFFFC; // Location of first instruction in memory
-const IRQ_VECTOR:   u16 = 0xFFFE; 
+const IRQ_VECTOR:   u16 = 0xFFFE;
 
 /// CPU Status Flags
 enum Flag {
@@ -28,11 +28,11 @@ enum Flag {
 /// CPU Registers
 #[derive(Debug, Default)]
 struct Registers {
-	a: u8,    // Accumulator register used by the ALU
-	x: u8,    // Indexing register
-	y: u8,    // ''
-	s: u8,    // Stack pointer
-	pc: u16,  // Program counter (2 bytes wide)
+	a: u8,     // Accumulator register used by the ALU
+	x: u8,     // Indexing register
+	y: u8,     // ''
+	s: u8,     // Stack pointer
+	pc: u16,   // Program counter (2 bytes wide)
 	status: u8 // Status register used by various instructions and the ALU
 }
 
@@ -272,6 +272,16 @@ impl CPU {
 			0xC1 => { let address = self.indirect_x_mode(); self.cmp(address); },
 			0xD1 => { let address = self.indirect_y_mode(); self.cmp(address); },
 
+			// CPX
+			0xE0 => { let address = self.immediate_mode(); self.cpx(address) },
+			0xE4 => { let address = self.zero_page_mode(); self.cpx(address) },
+			0xEC => { let address = self.absolute_mode(); self.cpx(address) },
+
+			// CPY
+			0xC0 => { let address = self.immediate_mode(); self.cpy(address) },
+			0xC4 => { let address = self.zero_page_mode(); self.cpy(address) },
+			0xCC => { let address = self.absolute_mode(); self.cpy(address) },
+
 			// INCREMENT Instructions
 			0xE6 => { let address = self.zero_page_mode(); self.inc(address); },
 			0xF6 => { let address = self.zero_page_x_mode(); self.inc(address); },
@@ -455,6 +465,36 @@ impl CPU {
 		}
 	}
 
+	// Compare Helper
+	fn compare(&mut self, a: u8, b: u8) {
+		self.set_status(Flag::Carry, a >= b);
+		self.set_zn(a - b);
+	}
+
+	// CMP - Compare memory and accumulator
+	// A - M
+	fn cmp(&mut self, address: u16) {
+		let a = self.registers.a;
+		let b = self.load(address);
+		self.compare(a, b);
+	}
+
+	// CPX - Compare memory and x
+	// X - M
+	fn cpx(&mut self, address: u16) {
+		let a = self.registers.x;
+		let b = self.load(address);
+		self.compare(a, b);
+	}
+
+	// CPY - Compare memory and y
+	// Y - M
+	fn cpy(&mut self, address: u16) {
+		let a = self.registers.y;
+		let b = self.load(address);
+		self.compare(a, b);
+	}
+
 	// DEC - Decrement memory by one
 	// M - 1 -> M
 	fn dec(&mut self, address: u16) {
@@ -555,15 +595,6 @@ impl CPU {
 	/// CLV - Clear overflow flag
 	fn clv(&mut self) {
 		self.set_status(Flag::Overflow, false);
-	}
-
-	// CMP - Compare memory and accumulator
-	// A - M
-	fn cmp(&mut self, address: u16) {
-		let value = self.load(address);
-		let a = self.registers.a;
-		self.set_status(Flag::Carry, a >= value);
-		self.set_zn(a - value);
 	}
 
 	fn nop(&self) { }
