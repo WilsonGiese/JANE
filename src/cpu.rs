@@ -151,6 +151,12 @@ impl CPU {
 		self.load(address)
 	}
 
+	// Pull a word from the stack
+	fn pullw(&mut self) -> u16 {
+		let word = self.pull();
+		(word | self.pull()) as u16
+	}
+
 
 	// Addressing modes
 
@@ -360,6 +366,11 @@ impl CPU {
 			0x08 => self.php(),
 			0x68 => self.pla(),
 			0x28 => self.plp(),
+
+			// Return Instructions
+			0x4D => self.rti(),
+			0x60 => self.rts(),
+
 
 			// SET Instructions
 			0x38 => self.sec(),
@@ -706,6 +717,26 @@ impl CPU {
 	// toS -> P
 	fn plp(&mut self) {
 		self.registers.status = self.pull();
+	}
+
+	// ROL - Rotate memory one bit left
+
+	// ROL - Rotate accumulator one bit left
+
+	// ROR - Rotate memory one bit right
+
+	// ROR - Rotate accumulator one bit right
+
+	// RTI - Return from interrupt
+	fn rti(&mut self) {
+		self.registers.s = self.pull();
+		self.registers.pc = self.pullw();
+	}
+
+	// RTS - Return from subroutine
+	// toS -> PC, PC + 1 -> PC
+	fn rts(&mut self) {
+		self.registers.pc = self.pullw() + 1;
 	}
 
 	// SEC - Set carry
