@@ -220,7 +220,7 @@ impl CPU {
 			0x69 => { let address = self.immediate_mode(); self.adc(address); },
 			0x65 => { let address = self.zero_page_mode(); self.adc(address); },
 			0x75 => { let address = self.zero_page_x_mode(); self.adc(address); },
-			0x60 => { let address = self.absolute_mode(); self.adc(address); },
+			0x6D => { let address = self.absolute_mode(); self.adc(address); },
 			0x7D => { let address = self.absolute_x_mode(); self.adc(address); },
 			0x79 => { let address = self.absolute_y_mode(); self.adc(address); },
 			0x61 => { let address = self.indirect_x_mode(); self.adc(address); },
@@ -368,9 +368,18 @@ impl CPU {
 			0x28 => self.plp(),
 
 			// Return Instructions
-			0x4D => self.rti(),
+			0x40 => self.rti(),
 			0x60 => self.rts(),
 
+			// SBC
+			0xE9 => { let address = self.immediate_mode(); self.sbc(address); },
+			0xE5 => { let address = self.zero_page_mode(); self.sbc(address); },
+			0xF5 => { let address = self.zero_page_x_mode(); self.sbc(address); },
+			0xED => { let address = self.absolute_mode(); self.sbc(address); },
+			0xFD => { let address = self.absolute_x_mode(); self.sbc(address); },
+			0xF9 => { let address = self.absolute_y_mode(); self.sbc(address); },
+			0xE1 => { let address = self.indirect_x_mode(); self.sbc(address); },
+			0xF1 => { let address = self.indirect_y_mode(); self.sbc(address); }
 
 			// SET Instructions
 			0x38 => self.sec(),
@@ -737,6 +746,25 @@ impl CPU {
 	// toS -> PC, PC + 1 -> PC
 	fn rts(&mut self) {
 		self.registers.pc = self.pullw() + 1;
+	}
+
+	// SBC - Subtract memory from accumulator with borrow
+	// A - M - C -> A
+	fn sbc(&mut self, address: u16) {
+		let a = self.registers.a;
+		let value = self.load(address);
+        let mut new_a = a as u32 - value as u32;
+        if !self.get_status(Flag::Carry) {
+            new_a -= 1;
+        }
+        self.set_status(Flag::Carry, (new_a & 0x100) == 0);
+
+        let new_a = new_a as u8;
+		if (a ^ new_a) & 0x80 != 0 && (a ^ value) & 0x80 == 0x80 {
+			self.set_status(Flag::Carry, true);
+		}
+		self.set_zn(new_a);
+		self.registers.a = new_a;
 	}
 
 	// SEC - Set carry
